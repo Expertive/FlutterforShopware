@@ -2,10 +2,10 @@ class AppConfig {
   // Shopware API Configuration - These values are loaded from the Shopware config dynamically.
   // Note: These default values are only used for the initial load.
   // The actual values are loaded from the backend from the /store-api/flutter/config endpoint.
-  static String shopwareBaseUrl = 'http://localhost/shopware6/public/';
+  static String shopwareBaseUrl = 'https://demo.expertive.de/';
   // The default value in the backend config.xml should be the same.
   // This value is updated when loaded from the backend (shopware_api.dart)
-  static String salesChannelAccessKey = 'xx';
+  static String salesChannelAccessKey = 'SWSCR2ZZS0LEBFRETUZHTJBFNA';
 
   // API Endpoints
   // Layout endpoints are still coming from the plugin.

@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/painting.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'dart:convert';
 
 import '../models/product.dart';
@@ -25,9 +26,59 @@ class ShopwareApi {
 
   Future<Map<String, dynamic>> getLayout(String pageId) async {
     try {
+      // Get current language ID from context to ensure correct language content
+      String? languageId;
+      try {
+        final context = await getSalesChannelContext();
+        final language = context['language'] as Map<String, dynamic>?;
+        languageId = language?['id']?.toString();
+      } catch (e) {
+        // If context fetch fails, continue without language ID
+      }
+      
+      // Build URL with cache-busting parameter and language ID if available
+      String url = '${AppConfig.layoutEndpoint}/$pageId';
+      final queryParams = <String, String>{
+        '_t': DateTime.now().millisecondsSinceEpoch.toString(), // Cache busting
+      };
+      if (languageId != null && languageId.isNotEmpty) {
+        queryParams['languageId'] = languageId;
+      }
+      
+      final uri = Uri.parse(url).replace(queryParameters: queryParams);
+      
+      if (kDebugMode) {
+        print('=== Layout API Request ===');
+        print('URL: ${uri.toString()}');
+        print('Language ID: $languageId');
+        final token = await TokenStorage.instance.loadContextToken();
+        print('Context Token: $token');
+      }
+      
       final response = await _dio.get(
-        '${AppConfig.layoutEndpoint}/$pageId',
+        uri.toString(),
+        options: Options(
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+          },
+        ),
       );
+
+      if (kDebugMode) {
+        print('=== Layout API Response ===');
+        print('Status Code: ${response.statusCode}');
+        print('Response Headers: ${response.headers.map}');
+        final responseToken = response.headers.value('sw-context-token');
+        print('Response Context Token: $responseToken');
+        if (response.data is Map) {
+          final data = response.data as Map;
+          print('Response has sections: ${data.containsKey('sections')}');
+          print('Response has child: ${data.containsKey('child')}');
+          print('Response has type: ${data.containsKey('type')}');
+        }
+      }
 
       return response.data;
     } on DioException catch (e) {
@@ -819,9 +870,16 @@ class ShopwareApi {
     try {
       final response = await _dio.get('/store-api/currency');
       final data = response.data;
+      
       if (data is Map && data['elements'] is List) {
         return List<Map<String, dynamic>>.from(data['elements']);
       }
+      
+      // Try alternative format - maybe data is directly a list
+      if (data is List) {
+        return List<Map<String, dynamic>>.from(data.map((e) => Map<String, dynamic>.from(e as Map)));
+      }
+      
       return [];
     } catch (e) {
       rethrow;

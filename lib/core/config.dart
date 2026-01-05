@@ -5,7 +5,7 @@ class AppConfig {
   // Initial baseUrl comes from app_config.dart; can be overridden by env or runtime update
   static String baseUrl = const String.fromEnvironment(
     'SHOPWARE_BASE_URL',
-    defaultValue: 'http://localhost/shopware67/public/',
+    defaultValue: 'https://demo.expertive.de/',
   );
 
   // Optional: sales channel domain for clarity/logging; not required for headers

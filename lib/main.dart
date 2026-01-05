@@ -3,8 +3,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:go_router/go_router.dart';
-import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
-import 'package:webview_flutter_web/webview_flutter_web.dart';
+// WebView platform interface - web platformu için gerekli değil (iOS için)
+// import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
+// import 'package:webview_flutter_web/webview_flutter_web.dart';
 
 import 'screens/home_screen.dart';
 import 'screens/category_screen.dart';
@@ -33,14 +34,12 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Platform-specific WebView initialization
-  if (kIsWeb) {
-    // Web platform
-    WebViewPlatform.instance = WebWebViewPlatform();
-  } else {
-    // iOS/macOS platform - WebKitWebViewPlatform is automatically used
-    // Android platform uses default implementation automatically
-    // No manual setup needed for mobile platforms
-  }
+  // iOS/macOS platform - WebKitWebViewPlatform is automatically used
+  // Android platform uses default implementation automatically
+  // Web platform için webview_flutter_web paketi gerekli (şu an devre dışı)
+  // if (kIsWeb) {
+  //   WebViewPlatform.instance = WebWebViewPlatform();
+  // }
 
   // Hive init
   await Hive.initFlutter();
@@ -103,7 +102,7 @@ class FlutterShopApp extends StatelessWidget {
             letterSpacing: -0.5,
           ),
         ),
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),

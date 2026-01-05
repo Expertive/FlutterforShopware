@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
+import 'package:flutter/painting.dart' show imageCache;
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -34,6 +35,11 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _drawerParentCategoryId; // current level
   final List<String> _drawerBreadcrumb = <String>[]; // path stack
   String? _drawerCurrentCategoryName; // current level name
+  
+  // Dil ve Kur seçimi için
+  List<Map<String, dynamic>> _availableLanguages = [];
+  List<Map<String, dynamic>> _availableCurrencies = [];
+  bool _loadingLanguagesCurrencies = false;
 
   @override
   void initState() {
@@ -104,14 +110,30 @@ class _HomeScreenState extends State<HomeScreen> {
       // Config yüklendikten sonr a sales channel context'i yüklenir
       // So the correct baseUrl is used for requests
       try {
+        if (kDebugMode) {
+          print('=== Loading Sales Channel Context ===');
+          final token = await TokenStorage.instance.loadContextToken();
+          print('Current context token: $token');
+        }
         final contextData = await _api.getSalesChannelContext();
+        if (kDebugMode) {
+          final language = contextData['language'] as Map<String, dynamic>?;
+          final currency = contextData['currency'] as Map<String, dynamic>?;
+          print('Context Language ID: ${language?['id']}, Name: ${language?['name']}');
+          print('Context Currency ID: ${currency?['id']}, ISO: ${currency?['isoCode']}');
+        }
         final salesChannelInfo = SalesChannelInfo.fromContext(contextData);
         if (mounted) {
           setState(() {
             _salesChannelInfo = salesChannelInfo;
           });
         }
+        // Load language and currency lists
+        _loadLanguagesAndCurrencies(contextData);
       } catch (e) {
+        if (kDebugMode) {
+          print('Error loading sales channel context: $e');
+        }
         // Error loading sales channel context (continue even on error, use default values)
         // Continue even on error, use default values
       }
@@ -126,6 +148,12 @@ class _HomeScreenState extends State<HomeScreen> {
       final homePageId = config['pages']?['home'];
       if (homePageId != null && homePageId.isNotEmpty) {
         try {
+          if (kDebugMode) {
+            print('=== Loading Layout ===');
+            print('Home Page ID: $homePageId');
+            final token = await TokenStorage.instance.loadContextToken();
+            print('Context token before layout load: $token');
+          }
           final layoutWidget =
               await _layoutService.loadLayout(homePageId, context);
           if (mounted) {
@@ -135,6 +163,9 @@ class _HomeScreenState extends State<HomeScreen> {
             });
           }
         } catch (layoutError) {
+          if (kDebugMode) {
+            print('Layout loading error: $layoutError');
+          }
           // Layout loading error - show fallback layout (continue even on error, use default values)
           // Layout loading error - show fallback layout
           if (mounted) {
@@ -241,66 +272,165 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
+    // AppBar'da sadece text göster (logo DrawerHeader'da)
+    return Text(
+      _salesChannelInfo?.name ?? AppConfigCore.AppConfig.appName,
+      style: const TextStyle(fontSize: 18),
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  // Load language and currency lists
+  Future<void> _loadLanguagesAndCurrencies(Map<String, dynamic>? contextData) async {
+    if (_loadingLanguagesCurrencies) return;
+    
+    setState(() {
+      _loadingLanguagesCurrencies = true;
+    });
+
+    try {
+      final salesChannel = contextData?['salesChannel'] as Map<String, dynamic>?;
+      
+      // Önce sales channel'dan dil ve kur listelerini al
+      var availableLanguages = salesChannel?['languages'] as List? ?? [];
+      var availableCurrencies = salesChannel?['currencies'] as List? ?? [];
+
+      // Eğer sales channel'da yoksa API'den al
+      if (availableLanguages.isEmpty) {
+        try {
+          availableLanguages = await _api.getAvailableLanguages();
+        } catch (e) {
+          // Silently fail
+        }
+      }
+
+      if (availableCurrencies.isEmpty) {
+        try {
+          availableCurrencies = await _api.getAvailableCurrencies();
+        } catch (e) {
+          // Silently fail
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _availableLanguages = List<Map<String, dynamic>>.from(
+            availableLanguages.map((e) => Map<String, dynamic>.from(e as Map)),
+          );
+          _availableCurrencies = List<Map<String, dynamic>>.from(
+            availableCurrencies.map((e) => Map<String, dynamic>.from(e as Map)),
+          );
+          _loadingLanguagesCurrencies = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loadingLanguagesCurrencies = false;
+        });
+      }
+    }
+  }
+
+  // Context'i güncelle (dil veya kur değişikliği)
+  Future<void> _updateContext({String? languageId, String? currencyId}) async {
+    try {
+      // Context'i güncelle
+      await _api.updateContext(
+        languageId: languageId,
+        currencyId: currencyId,
+      );
+      
+      // Token'ın kaydedildiğinden emin olmak için kısa bir bekleme
+      // SharedPreferences'ın commit edilmesi için
+      await Future.delayed(const Duration(milliseconds: 200));
+      
+      // Cache'leri temizle - dil değişikliğinden sonra içeriklerin yeniden yüklenmesi için
+      try {
+        // Image cache'i temizle
+        imageCache.clear();
+        imageCache.clearLiveImages();
+      } catch (e) {
+        // Silent fail on image cache clear error
+      }
+      
+      // Layout widget'ını sıfırla - yeni dilde yeniden yüklenecek
+      if (mounted) {
+        setState(() {
+          _layoutWidget = null;
+          _isLoading = true;
+        });
+      }
+      
+      // Yeni context'i doğrulamak için context'i tekrar al
+      // Bu, yeni context token'ın API çağrılarında kullanılmasını sağlar
+      // Ayrıca yeni dil bilgisinin context'te olduğunu doğrular
+      final newContext = await _api.getSalesChannelContext();
+      final newLanguage = newContext['language'] as Map<String, dynamic>?;
+      
+      // Yeni dil bilgisini state'e kaydet
+      if (mounted && newLanguage != null) {
+        final salesChannelInfo = SalesChannelInfo.fromContext(newContext);
+        setState(() {
+          _salesChannelInfo = salesChannelInfo;
+        });
+      }
+      
+      // Context güncellendi, sayfayı yeniden yükle
+      await _loadHomeLayout();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Language/Currency updated'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Update error: $e'),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  // Logo URL'ini al ve normalize et (hem AppBar hem DrawerHeader için kullanılabilir)
+  String? _getLogoUrl() {
     // First check logo URL from AppConfig, then state variable, then salesChannelInfo
-    final logoUrl = AppConfigCore.AppConfig.logoUrl ??
+    String? logoUrl = AppConfigCore.AppConfig.logoUrl ??
         _appLogoUrl ??
         _salesChannelInfo?.logoUrl;
 
     // Logo URL priority: AppConfig > App Logo URL > Sales Channel Info
 
-    // If logo exists, show logo + name, otherwise only name
+    // If logoUrl is relative, make it absolute by combining with base URL
     if (logoUrl != null && logoUrl.isNotEmpty) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // On Web platform, CachedNetworkImage may cause CORS issues, so use Image.network
-          kIsWeb
-              ? Image.network(
-                  logoUrl,
-                  width: 32,
-                  height: 32,
-                  fit: BoxFit.contain,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return const SizedBox(
-                      width: 32,
-                      height: 32,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    // Image.network error
-                    return const Icon(Icons.store, size: 24);
-                  },
-                )
-              : CachedNetworkImage(
-                  imageUrl: logoUrl,
-                  width: 32,
-                  height: 32,
-                  fit: BoxFit.contain,
-                  placeholder: (context, url) => const SizedBox(
-                    width: 32,
-                    height: 32,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                  errorWidget: (context, url, error) {
-                    // CachedNetworkImage error
-                    return const Icon(Icons.store, size: 24);
-                  },
-                ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              _salesChannelInfo?.name ?? AppConfigCore.AppConfig.appName,
-              style: const TextStyle(fontSize: 18),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      );
+      if (logoUrl.startsWith('/') || (!logoUrl.startsWith('http://') && !logoUrl.startsWith('https://'))) {
+        // Relative URL - combine with base URL
+        String baseUrl = AppConfig.baseUrl;
+        if (baseUrl.endsWith('/store-api')) {
+          baseUrl = baseUrl.replaceAll('/store-api', '');
+        }
+        if (baseUrl.endsWith('/public')) {
+          baseUrl = baseUrl.replaceAll('/public', '');
+        }
+        if (baseUrl.endsWith('/')) {
+          baseUrl = baseUrl.substring(0, baseUrl.length - 1);
+        }
+        if (!logoUrl.startsWith('/')) {
+          logoUrl = '$baseUrl/$logoUrl';
+        } else {
+          logoUrl = '$baseUrl$logoUrl';
+        }
+      }
     }
-    // SalesChannelInfo exists, otherwise use app name from AppConfig
-    return Text(_salesChannelInfo?.name ?? AppConfigCore.AppConfig.appName);
+
+    return logoUrl;
   }
 
   Widget _buildBody() {
@@ -329,58 +459,233 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: BoxDecoration(
                 color: _primaryColor,
               ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Logo
-                  if (_salesChannelInfo?.logoUrl != null &&
-                      _salesChannelInfo!.logoUrl!.isNotEmpty)
-                    CachedNetworkImage(
-                      imageUrl: _salesChannelInfo!.logoUrl!,
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.contain,
-                      placeholder: (context, url) => const SizedBox(
-                        width: 80,
-                        height: 80,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
+                  // Logo - tüm kaynaklardan al (AppConfig > App Logo URL > Sales Channel Info)
+                  Builder(
+                    builder: (context) {
+                      final logoUrl = _getLogoUrl();
+                      if (logoUrl != null && logoUrl.isNotEmpty) {
+                        return kIsWeb
+                            ? Image.network(
+                                logoUrl,
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.contain,
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return const SizedBox(
+                                    width: 50,
+                                    height: 50,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(
+                                    Icons.store,
+                                    size: 40,
+                                    color: Colors.white,
+                                  );
+                                },
+                              )
+                            : CachedNetworkImage(
+                                imageUrl: logoUrl,
+                                width: 80,
+                                fit: BoxFit.contain,
+                                memCacheWidth: 100,
+                                memCacheHeight: 100,
+                                fadeInDuration: const Duration(milliseconds: 200),
+                                placeholder: (context, url) => const SizedBox(
+                                  width: 50,
+                                  height: 50,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                errorWidget: (context, url, error) {
+                                  return const Icon(
+                                    Icons.store,
+                                    size: 40,
+                                    color: Colors.white,
+                                  );
+                                },
+                                httpHeaders: const {
+                                  'Accept': 'image/*',
+                                },
+                              );
+                      }
+                      return const Icon(
+                        Icons.store,
+                        size: 40,
+                        color: Colors.white,
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 6),
+                  // Language and Currency selection side by side
+                  Row(
+                    children: [
+                      // Language selection
+                      Expanded(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.language, size: 14, color: Colors.white70),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: DropdownButton<String>(
+                                value: _salesChannelInfo?.languageId?.toString(),
+                                isExpanded: true,
+                                underline: const SizedBox(),
+                                dropdownColor: _primaryColor,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.white,
+                                ),
+                                icon: const Icon(Icons.arrow_drop_down, color: Colors.white70, size: 18),
+                                items: _availableLanguages.isEmpty
+                                    ? []
+                                    : _availableLanguages.map((lang) {
+                                  final id = lang['id']?.toString();
+                                  final name = lang['name']?.toString() ?? lang['translated']?['name']?.toString() ?? 'Unknown';
+                                  return DropdownMenuItem<String>(
+                                    value: id,
+                                    child: Text(
+                                      name,
+                                      style: const TextStyle(color: Colors.white, fontSize: 11),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (String? newLanguageId) {
+                                  if (newLanguageId != null && newLanguageId != _salesChannelInfo?.languageId) {
+                                    _updateContext(languageId: newLanguageId);
+                                  }
+                                },
+                                hint: _loadingLanguagesCurrencies
+                                    ? const SizedBox(
+                                        width: 10,
+                                        height: 10,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 1.5,
+                                          color: Colors.white70,
+                                        ),
+                                      )
+                                    : Text(
+                                        _salesChannelInfo?.languageName ?? 'Language',
+                                        style: const TextStyle(color: Colors.white70, fontSize: 11),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      errorWidget: (context, url, error) => const Icon(
-                        Icons.store,
-                        size: 60,
-                        color: Colors.white,
+                      const SizedBox(width: 8),
+                      // Currency selection
+                      Expanded(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Builder(
+                              builder: (context) {
+                                // Get current currency ISO code to show appropriate icon
+                                final currentCurrencyIso = _salesChannelInfo?.currencyIsoCode?.toUpperCase();
+                                IconData currencyIcon;
+                                if (currentCurrencyIso == 'EUR') {
+                                  currencyIcon = Icons.euro;
+                                } else if (currentCurrencyIso == 'USD') {
+                                  currencyIcon = Icons.attach_money;
+                                } else if (currentCurrencyIso == 'GBP') {
+                                  currencyIcon = Icons.currency_pound;
+                                } else if (currentCurrencyIso == 'JPY') {
+                                  currencyIcon = Icons.currency_yen;
+                                } else {
+                                  currencyIcon = Icons.attach_money;
+                                }
+                                return Icon(currencyIcon, size: 14, color: Colors.white70);
+                              },
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Builder(
+                                builder: (context) {
+                                  // Get current currency ID as string
+                                  final currentCurrencyId = _salesChannelInfo?.currencyId?.toString();
+                                  
+                                  // Build currency items
+                                  final currencyItems = _availableCurrencies.isEmpty
+                                      ? <DropdownMenuItem<String>>[]
+                                      : _availableCurrencies.where((currency) {
+                                          final id = currency['id']?.toString();
+                                          return id != null && id.isNotEmpty;
+                                        }).map((currency) {
+                                    final id = currency['id']?.toString() ?? '';
+                                    final isoCode = currency['isoCode']?.toString() ?? '';
+                                    final name = currency['name']?.toString() ?? currency['translated']?['name']?.toString() ?? isoCode;
+                                    return DropdownMenuItem<String>(
+                                      value: id,
+                                      child: Text(
+                                        '$isoCode - $name',
+                                        style: const TextStyle(color: Colors.white, fontSize: 11),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    );
+                                  }).toList();
+                                  
+                                  // Check if current currency ID exists in items
+                                  final currencyIdExists = currencyItems.any((item) => item.value == currentCurrencyId);
+                                  
+                                  return DropdownButton<String>(
+                                    value: currencyIdExists ? currentCurrencyId : null,
+                                    isExpanded: true,
+                                    underline: const SizedBox(),
+                                    dropdownColor: _primaryColor,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.white,
+                                    ),
+                                    icon: const Icon(Icons.arrow_drop_down, color: Colors.white70, size: 18),
+                                    items: currencyItems,
+                                    onChanged: (String? newCurrencyId) {
+                                      if (newCurrencyId != null && newCurrencyId.isNotEmpty) {
+                                        final currentCurrencyId = _salesChannelInfo?.currencyId?.toString();
+                                        if (newCurrencyId != currentCurrencyId) {
+                                          _updateContext(currencyId: newCurrencyId);
+                                        }
+                                      }
+                                    },
+                                    hint: _loadingLanguagesCurrencies
+                                        ? const SizedBox(
+                                            width: 10,
+                                            height: 10,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 1.5,
+                                              color: Colors.white70,
+                                            ),
+                                          )
+                                        : Text(
+                                            _salesChannelInfo?.currencyIsoCode ?? 'Currency',
+                                            style: const TextStyle(color: Colors.white70, fontSize: 11),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    )
-                  else
-                    const Icon(
-                      Icons.store,
-                      size: 60,
-                      color: Colors.white,
-                    ),
-                  const SizedBox(height: 12),
-                  // Mağaza adı
-                  Text(
-                    _salesChannelInfo?.name ?? AppConfigCore.AppConfig.appName,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                    ],
                   ),
-                  if (_salesChannelInfo?.currencyIsoCode != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      _salesChannelInfo!.currencyIsoCode!,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),
