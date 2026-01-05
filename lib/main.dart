@@ -32,9 +32,14 @@ import 'core/config.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Web platform for webview
+  // Platform-specific WebView initialization
   if (kIsWeb) {
+    // Web platform
     WebViewPlatform.instance = WebWebViewPlatform();
+  } else {
+    // iOS/macOS platform - WebKitWebViewPlatform is automatically used
+    // Android platform uses default implementation automatically
+    // No manual setup needed for mobile platforms
   }
 
   // Hive init
