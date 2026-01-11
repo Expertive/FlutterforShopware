@@ -289,8 +289,13 @@ class ShopwareApi {
       }).toList();
 
       return categories;
-    } catch (e) {
-      rethrow;
+    } on DioException {
+      // Network hatası durumunda boş liste döndür (sessizce geç)
+      // Connection refused, timeout vb. hatalar için
+      return [];
+    } catch (_) {
+      // Diğer hatalar için de boş liste döndür
+      return [];
     }
   }
 
@@ -476,17 +481,22 @@ class ShopwareApi {
       if (configData['apiBaseUrl'] != null) {
         final apiBaseUrl = (configData['apiBaseUrl'] as String).trim();
         if (apiBaseUrl.isNotEmpty) {
-          // Normalize baseUrl - ensure it ends with / for proper URL construction
-          String normalizedBaseUrl = apiBaseUrl;
-          if (!normalizedBaseUrl.endsWith('/')) {
-            normalizedBaseUrl = '$normalizedBaseUrl/';
-          }
-          // Update baseUrl (single source of truth)
-          if (AppConfig.baseUrl != normalizedBaseUrl) {
-            AppConfig.update(newBaseUrl: normalizedBaseUrl);
-            // Also update Dio's baseUrl immediately
-            ApiClient.instance.dio.options.baseUrl = normalizedBaseUrl;
-            configChanged = true;
+          // Don't use localhost baseUrl from backend - ignore it
+          if (apiBaseUrl.contains('localhost') || apiBaseUrl.contains('127.0.0.1')) {
+            // Don't update baseUrl if it's localhost - continue with other config values
+          } else {
+            // Normalize baseUrl - ensure it ends with / for proper URL construction
+            String normalizedBaseUrl = apiBaseUrl;
+            if (!normalizedBaseUrl.endsWith('/')) {
+              normalizedBaseUrl = '$normalizedBaseUrl/';
+            }
+            // Update baseUrl (single source of truth)
+            if (AppConfig.baseUrl != normalizedBaseUrl) {
+              AppConfig.update(newBaseUrl: normalizedBaseUrl);
+              // Also update Dio's baseUrl immediately
+              ApiClient.instance.dio.options.baseUrl = normalizedBaseUrl;
+              configChanged = true;
+            }
           }
         }
       }
@@ -578,13 +588,34 @@ class ShopwareApi {
     if (!forceRefresh) {
       final cachedConfig = await TokenStorage.instance.loadFlutterConfig();
       if (cachedConfig != null) {
-        // Apply cached config to AppConfig
-        await _updateAppConfig(cachedConfig);
+        // Check if cached config has invalid baseUrl (localhost)
+        final cachedBaseUrl = (cachedConfig['apiBaseUrl'] as String?)?.trim() ?? '';
+        if (cachedBaseUrl.contains('localhost') || cachedBaseUrl.contains('127.0.0.1')) {
+          // Cache'de localhost varsa cache'i temizle ve backend'den yükle
+          await TokenStorage.instance.clearFlutterConfig();
+          // Continue to fetch from backend
+        } else {
+          // Check if cached access key matches current default access key
+          // If different, clear cache to force reload with new key
+          final cachedAccessKey = (cachedConfig['salesChannelAccessKey'] as String?)?.trim() ?? '';
+          final currentDefaultKey = AppConfig.salesChannelAccessKey;
+          
+          // If access key changed in code (different from cached), clear cache
+          if (cachedAccessKey.isNotEmpty && 
+              currentDefaultKey.isNotEmpty && 
+              cachedAccessKey != currentDefaultKey) {
+            await TokenStorage.instance.clearFlutterConfig();
+            // Continue to fetch from backend with new key
+          } else {
+            // Apply cached config to AppConfig (includes access key)
+            await _updateAppConfig(cachedConfig);
 
-        // Fetch latest config from backend in background and compare
-        _refreshConfigInBackground();
+            // Fetch latest config from backend in background and compare
+            _refreshConfigInBackground();
 
-        return cachedConfig;
+            return cachedConfig;
+          }
+        }
       }
     }
 
@@ -635,6 +666,12 @@ class ShopwareApi {
         if (dataMap['success'] == true) {
           final configData =
               Map<String, dynamic>.from(dataMap['data'] ?? defaultConfig);
+
+          // Check if apiBaseUrl is localhost - if so, use default baseUrl instead
+          final apiBaseUrl = (configData['apiBaseUrl'] as String?)?.trim() ?? '';
+          if (apiBaseUrl.contains('localhost') || apiBaseUrl.contains('127.0.0.1')) {
+            configData['apiBaseUrl'] = AppConfig.baseUrl; // Use default baseUrl
+          }
 
           // Update AppConfig
           await _updateAppConfig(configData);

@@ -32,6 +32,7 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
+.vscode/launch.json
 
 # Symbolication related
 app.*.symbols
@@ -46,3 +47,4 @@ app.*.map.json
 POSTMAN_REQUESTS.md
 lib/core/config/app_config.dart
 lib/core/config.dart
+.vscode/launch.json

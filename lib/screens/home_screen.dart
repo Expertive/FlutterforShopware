@@ -773,6 +773,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: LinearProgressIndicator(),
                     );
                   }
+                  if (snapshot.hasError) {
+                    // Error loading categories
+                    return const Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Text('Categories not available'),
+                    );
+                  }
                   final elements = snapshot.data ?? [];
                   if (elements.isEmpty) {
                     return const Padding(
