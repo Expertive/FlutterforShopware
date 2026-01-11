@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../data/repositories/orders_repository.dart';
-import '../core/config.dart';
+import '../core/config/app_config.dart';
 import '../core/services/shopware_api.dart';
 
 class OrderListScreen extends StatefulWidget {
@@ -29,7 +29,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
   @override
   void initState() {
     super.initState();
-    // Başlangıçta AppConfig'den primary color'ı al (main()'de yüklenmiş olacak)
+    // Start default color
     _primaryColor = _hexToColor(AppConfig.primaryColorHex);
     _loadPrimaryColor();
     _loadOrders();
@@ -46,7 +46,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
         });
       }
     } catch (e) {
-      // Hata durumunda AppConfig'deki değeri kullan
+      // Use default color if error occurs
       if (mounted) {
         setState(() {
           _primaryColor = _hexToColor(AppConfig.primaryColorHex);
@@ -86,10 +86,10 @@ class _OrderListScreenState extends State<OrderListScreen> {
       final ordersData = result['orders'] as Map<String, dynamic>?;
       final elements = ordersData?['elements'] as List? ?? [];
 
-      // Debug: İlk order'ın yapısını yazdır
+      // Debug: Print first order's structure
       // Orders loaded successfully
 
-      // paymentChangeable bir array veya Map olabilir
+      // paymentChangeable can be an array or a Map
       final paymentChangeableData = result['paymentChangeable'];
       if (paymentChangeableData is Map) {
         _paymentChangeable = Map<String, bool>.from(
@@ -99,7 +99,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
               )),
         );
       } else {
-        // Array ise veya null ise boş Map kullan
+        // If array is or null, use empty Map
         _paymentChangeable = <String, bool>{};
       }
 
@@ -247,7 +247,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
             const SizedBox(height: 8),
             ElevatedButton(
               onPressed: () => context.go('/'),
-              child: const Text('Alışverişe Başla'),
+              child: const Text('Start Shopping'),
             ),
           ],
         ),
@@ -314,7 +314,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
   }
 
   String? _getPaymentStatusFromOrder(Map<String, dynamic> order) {
-    // Önce transactions array'inden payment status'u kontrol et
+    // First check transactions list from order
     final transactions = order['transactions'] as List?;
     if (transactions != null && transactions.isNotEmpty) {
       final firstTransaction = transactions[0] as Map<String, dynamic>?;
@@ -327,7 +327,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
       }
     }
 
-    // Eğer transaction state yoksa, order'ın kendi state'ini kontrol et
+    // If transaction state is not found, check order's own state
     final stateMachineState =
         order['stateMachineState'] as Map<String, dynamic>?;
     return stateMachineState?['name']?.toString() ??
@@ -340,7 +340,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
     final price = order['price'] as Map<String, dynamic>?;
     final totalPrice = price?['totalPrice'] as num? ?? 0.0;
 
-    // Payment status'u al
+    // Get payment status from order
     final rawPaymentStatus = _getPaymentStatusFromOrder(order);
     final stateName = _getPaymentStatusText(rawPaymentStatus);
 
@@ -357,7 +357,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
 
     final dateFormat = DateFormat('dd.MM.yyyy HH:mm');
     final formattedDate =
-        parsedDate != null ? dateFormat.format(parsedDate) : 'Tarih bilinmiyor';
+        parsedDate != null ? dateFormat.format(parsedDate) : 'Date unknown';
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

@@ -5,7 +5,7 @@ import '../core/services/shopware_api.dart';
 import '../widgets/product_card.dart';
 import '../core/storage.dart';
 import '../data/repositories/auth_repository.dart';
-import '../core/config.dart';
+import '../core/config/app_config.dart';
 import '../core/models/category.dart';
 
 class CategoryScreen extends StatefulWidget {
@@ -87,12 +87,12 @@ class _CategoryScreenState extends State<CategoryScreen> {
         });
       }
 
-      // Alt kategorileri al
+      // Get subcategories
       final subcategories = await _api.getCategories(
         parentId: widget.categoryId == 'root' ? null : widget.categoryId,
       );
 
-      // Ürünleri al
+      // Get products
       final products = await _api.getProducts(
         categoryId: widget.categoryId == 'root' ? null : widget.categoryId,
       );
@@ -185,7 +185,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Alt Kategoriler
+          // Subcategories
           if (_subcategories.isNotEmpty) ...[
             const Padding(
               padding: EdgeInsets.all(16.0),
@@ -211,7 +211,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                 itemCount: _subcategories.length,
                 itemBuilder: (context, index) {
                   final category = _subcategories[index];
-                  // Category objesi olduğu için direkt property'lerine erişiyoruz
+                  // Category object is direct access to properties
                   final String name;
                   final String id;
                   final String? imageUrl;
@@ -287,7 +287,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
             const SizedBox(height: 16),
           ],
 
-          // Ürünler
+          // Products
           if (_products.isNotEmpty) ...[
             const Padding(
               padding: EdgeInsets.all(16.0),
@@ -320,7 +320,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
             ),
           ],
 
-          // Boş durum
+          // Empty state
           if (_products.isEmpty && _subcategories.isEmpty)
             const Center(
               child: Padding(

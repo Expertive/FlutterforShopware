@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/repositories/wishlist_repository.dart';
-import '../core/config.dart';
+import '../core/config/app_config.dart';
 
 class WishlistScreen extends StatefulWidget {
   const WishlistScreen({super.key});
@@ -86,7 +86,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
       separatorBuilder: (_, __) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final p = _items[index];
-        final name = p['name']?.toString() ?? 'Ürün';
+        final name = p['name']?.toString() ?? 'Product';
         final id = p['id']?.toString() ?? '';
         return ListTile(
           title: Text(name),
@@ -108,5 +108,3 @@ class _WishlistScreenState extends State<WishlistScreen> {
     );
   }
 }
-
-

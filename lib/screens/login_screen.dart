@@ -4,7 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../data/repositories/auth_repository.dart';
 import '../core/services/shopware_api.dart';
-import '../core/config.dart';
+import '../core/config/app_config.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -33,7 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    // Başlangıçta AppConfig'den primary color'ı al (main()'de yüklenmiş olacak)
+    // Start default color
     _primaryColor = _hexToColor(AppConfig.primaryColorHex);
     _loadPrimaryColor();
   }
@@ -41,14 +41,15 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _loadPrimaryColor() async {
     try {
       final config = await _api.getFlutterConfig();
-      final primaryColorStr = config['primaryColor'] as String? ?? AppConfig.primaryColorHex;
+      final primaryColorStr =
+          config['primaryColor'] as String? ?? AppConfig.primaryColorHex;
       if (mounted) {
         setState(() {
           _primaryColor = _hexToColor(primaryColorStr);
         });
       }
     } catch (e) {
-      // Hata durumunda AppConfig'deki değeri kullan
+      // Use default color if error occurs
       if (mounted) {
         setState(() {
           _primaryColor = _hexToColor(AppConfig.primaryColorHex);
@@ -98,7 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Login successful')),
         );
-        // GoRouter ile köke yönlendir
+        // Redirect to home using GoRouter
         // ignore: use_build_context_synchronously
         context.go('/');
       }
@@ -146,7 +147,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   labelText: 'Email',
                 ),
                 keyboardType: TextInputType.emailAddress,
-                validator: (v) => (v == null || v.isEmpty) ? 'Email required' : null,
+                validator: (v) =>
+                    (v == null || v.isEmpty) ? 'Email required' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -155,7 +157,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   labelText: 'Password',
                 ),
                 obscureText: true,
-                validator: (v) => (v == null || v.isEmpty) ? 'Password required' : null,
+                validator: (v) =>
+                    (v == null || v.isEmpty) ? 'Password required' : null,
               ),
               const SizedBox(height: 8),
               Align(
@@ -167,11 +170,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     final recoverUrl = '${baseUrl}account/recover';
                     final uri = Uri.parse(recoverUrl);
                     if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      await launchUrl(uri,
+                          mode: LaunchMode.externalApplication);
                     } else {
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Could not open password recovery page')),
+                          const SnackBar(
+                              content: Text(
+                                  'Could not open password recovery page')),
                         );
                       }
                     }
@@ -208,5 +214,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-
-

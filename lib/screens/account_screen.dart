@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:dio/dio.dart';
 
 import '../core/storage.dart';
 import '../data/repositories/auth_repository.dart';
-import '../core/config.dart';
+import '../core/config/app_config.dart';
 import '../core/services/shopware_api.dart';
 
 class AccountScreen extends StatefulWidget {
@@ -33,7 +34,7 @@ class _AccountScreenState extends State<AccountScreen> {
   @override
   void initState() {
     super.initState();
-    // Başlangıçta AppConfig'den primary color'ı al (main()'de yüklenmiş olacak)
+    // Start default color
     _primaryColor = _hexToColor(AppConfig.primaryColorHex);
     _loadPrimaryColor();
     _load();
@@ -50,7 +51,7 @@ class _AccountScreenState extends State<AccountScreen> {
         });
       }
     } catch (e) {
-      // Hata durumunda AppConfig'deki değeri kullan
+      // Use default color if error occurs
       if (mounted) {
         setState(() {
           _primaryColor = _hexToColor(AppConfig.primaryColorHex);
@@ -81,14 +82,34 @@ class _AccountScreenState extends State<AccountScreen> {
           _profile = null;
         });
       } else {
-        final me = await AuthRepository().me();
-        setState(() {
-          _profile = me;
-        });
+        try {
+          final me = await AuthRepository().me();
+          setState(() {
+            _profile = me;
+          });
+        } on DioException catch (e) {
+          // 403 or 401 means not logged in
+          if (e.response?.statusCode == 403 || e.response?.statusCode == 401) {
+            setState(() {
+              _profile = null;
+              _error = null; // Don't show error, just show login screen
+            });
+          } else {
+            setState(() {
+              _error = e.toString();
+            });
+          }
+        } catch (e) {
+          setState(() {
+            _profile = null;
+            _error = null; // Don't show error for other exceptions
+          });
+        }
       }
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = null; // Don't show error, just show login screen
+        _profile = null;
       });
     } finally {
       setState(() {
@@ -132,7 +153,7 @@ class _AccountScreenState extends State<AccountScreen> {
             const SizedBox(height: 8),
             ElevatedButton(
               onPressed: () => context.go('/login'),
-              child: const Text('Log In'),
+              child: const Text('Login'),
             ),
           ],
         ),
@@ -172,7 +193,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 onPressed: _actionLoading
                     ? null
                     : () async {
-                        // Shopware storefront profile update sayfasını browser'da aç
+                        // Open Shopware storefront profile update page in browser
                         final baseUrl = AppConfig.baseUrl.endsWith('/')
                             ? AppConfig.baseUrl
                             : '${AppConfig.baseUrl}/';
@@ -196,7 +217,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 onPressed: _actionLoading
                     ? null
                     : () async {
-                        // Open Shopware storefront password change page in browser
+                        // Open Shopware storefront password reset page in browser
                         final baseUrl = AppConfig.baseUrl.endsWith('/')
                             ? AppConfig.baseUrl
                             : '${AppConfig.baseUrl}/';

@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../data/repositories/address_repository.dart';
 import '../core/services/shopware_api.dart';
-import '../core/config.dart';
+import '../core/config/app_config.dart';
 
 class AddressEditScreen extends StatefulWidget {
   final Map<String, dynamic>? initial;

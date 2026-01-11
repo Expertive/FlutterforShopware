@@ -1,14 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/painting.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'dart:convert';
 
 import '../models/product.dart';
 import '../models/category.dart';
 import '../config/app_config.dart';
-import '../config.dart' as AppConfigCore;
-import '../../core/api_client.dart';
-import '../../core/storage.dart';
+import '../api_client.dart';
+import '../storage.dart';
 
 class ShopwareApi {
   static final ShopwareApi _instance = ShopwareApi._internal();
@@ -26,59 +24,19 @@ class ShopwareApi {
 
   Future<Map<String, dynamic>> getLayout(String pageId) async {
     try {
-      // Get current language ID from context to ensure correct language content
-      String? languageId;
-      try {
-        final context = await getSalesChannelContext();
-        final language = context['language'] as Map<String, dynamic>?;
-        languageId = language?['id']?.toString();
-      } catch (e) {
-        // If context fetch fails, continue without language ID
-      }
-      
-      // Build URL with cache-busting parameter and language ID if available
+      // Build URL with cache-busting parameter
+      // Note: Language ID is handled by sw-context-token header automatically
+      // Backend SalesChannelContext uses the language from the token
       String url = '${AppConfig.layoutEndpoint}/$pageId';
       final queryParams = <String, String>{
         '_t': DateTime.now().millisecondsSinceEpoch.toString(), // Cache busting
       };
-      if (languageId != null && languageId.isNotEmpty) {
-        queryParams['languageId'] = languageId;
-      }
-      
-      final uri = Uri.parse(url).replace(queryParameters: queryParams);
-      
-      if (kDebugMode) {
-        print('=== Layout API Request ===');
-        print('URL: ${uri.toString()}');
-        print('Language ID: $languageId');
-        final token = await TokenStorage.instance.loadContextToken();
-        print('Context Token: $token');
-      }
-      
-      final response = await _dio.get(
-        uri.toString(),
-        options: Options(
-          headers: {
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0',
-          },
-        ),
-      );
 
-      if (kDebugMode) {
-        print('=== Layout API Response ===');
-        print('Status Code: ${response.statusCode}');
-        print('Response Headers: ${response.headers.map}');
-        final responseToken = response.headers.value('sw-context-token');
-        print('Response Context Token: $responseToken');
-        if (response.data is Map) {
-          final data = response.data as Map;
-          print('Response has sections: ${data.containsKey('sections')}');
-          print('Response has child: ${data.containsKey('child')}');
-          print('Response has type: ${data.containsKey('type')}');
-        }
-      }
+      final uri = Uri.parse(url).replace(queryParameters: queryParams);
+
+      // Note: Cache-Control headers are handled by ApiClient interceptor
+      // On web platform, these headers are not sent to avoid CORS issues
+      final response = await _dio.get(uri.toString());
 
       return response.data;
     } on DioException catch (e) {
@@ -142,7 +100,7 @@ class ShopwareApi {
           },
         );
       } else {
-        // Genel ürün listesi
+        // General product list
         response = await _dio.get(
           AppConfig.productsEndpoint,
           queryParameters: {
@@ -517,9 +475,19 @@ class ShopwareApi {
       // API Base URL
       if (configData['apiBaseUrl'] != null) {
         final apiBaseUrl = (configData['apiBaseUrl'] as String).trim();
-        if (apiBaseUrl.isNotEmpty && AppConfig.shopwareBaseUrl != apiBaseUrl) {
-          AppConfig.shopwareBaseUrl = apiBaseUrl;
-          configChanged = true;
+        if (apiBaseUrl.isNotEmpty) {
+          // Normalize baseUrl - ensure it ends with / for proper URL construction
+          String normalizedBaseUrl = apiBaseUrl;
+          if (!normalizedBaseUrl.endsWith('/')) {
+            normalizedBaseUrl = '$normalizedBaseUrl/';
+          }
+          // Update baseUrl (single source of truth)
+          if (AppConfig.baseUrl != normalizedBaseUrl) {
+            AppConfig.update(newBaseUrl: normalizedBaseUrl);
+            // Also update Dio's baseUrl immediately
+            ApiClient.instance.dio.options.baseUrl = normalizedBaseUrl;
+            configChanged = true;
+          }
         }
       }
 
@@ -554,9 +522,9 @@ class ShopwareApi {
         final primaryColorStr = (configData['primaryColor'] as String).trim();
         if (primaryColorStr.isNotEmpty) {
           // Update primaryColorHex in AppConfig
-          final currentColor = AppConfigCore.AppConfig.primaryColorHex;
+          final currentColor = AppConfig.primaryColorHex;
           if (currentColor != primaryColorStr) {
-            AppConfigCore.AppConfig.update(newPrimaryColorHex: primaryColorStr);
+            AppConfig.update(newPrimaryColorHex: primaryColorStr);
             configChanged = true;
           }
         }
@@ -595,7 +563,7 @@ class ShopwareApi {
     // Default config
     final defaultConfig = {
       'appName': 'FlutterforShopware',
-      'apiBaseUrl': AppConfig.shopwareBaseUrl,
+      'apiBaseUrl': AppConfig.baseUrl,
       'salesChannelAccessKey': AppConfig.salesChannelAccessKey,
       'primaryColor': '#1976D2',
       'pages': {
@@ -628,6 +596,8 @@ class ShopwareApi {
   Future<Map<String, dynamic>> _fetchConfigFromBackend(
       Map<String, dynamic> defaultConfig) async {
     try {
+      // Try to fetch config - if access key is missing, this will fail
+      // but we'll handle it gracefully
       final response = await _dio.get(
         '/store-api/flutter/config',
         options: Options(
@@ -708,7 +678,7 @@ class ShopwareApi {
       try {
         final defaultConfig = {
           'appName': 'FlutterforShopware',
-          'apiBaseUrl': AppConfig.shopwareBaseUrl,
+          'apiBaseUrl': AppConfig.baseUrl,
           'salesChannelAccessKey': AppConfig.salesChannelAccessKey,
           'primaryColor': '#1976D2',
           'pages': {
@@ -771,7 +741,28 @@ class ShopwareApi {
   Future<Map<String, dynamic>> getSalesChannelContext() async {
     try {
       final response = await _dio.get('/store-api/context');
-      return Map<String, dynamic>.from(response.data ?? {});
+
+      // Get context token from response header and save it
+      final tokenFromHeader = response.headers.value('sw-context-token');
+      if (tokenFromHeader != null && tokenFromHeader.isNotEmpty) {
+        await TokenStorage.instance.saveContextToken(tokenFromHeader);
+      }
+
+      final contextData = Map<String, dynamic>.from(response.data ?? {});
+
+      // Get language ID from header if available and language is null in body
+      final languageIdFromHeader = response.headers.value('sw-language-id');
+      if (languageIdFromHeader != null &&
+          (!contextData.containsKey('language') ||
+              contextData['language'] == null)) {
+        // Add language ID to context data if not present
+        contextData['language'] = {
+          'id': languageIdFromHeader,
+          'name': 'Unknown', // Will be fetched separately if needed
+        };
+      }
+
+      return contextData;
     } catch (e) {
       rethrow;
     }
@@ -870,16 +861,17 @@ class ShopwareApi {
     try {
       final response = await _dio.get('/store-api/currency');
       final data = response.data;
-      
+
       if (data is Map && data['elements'] is List) {
         return List<Map<String, dynamic>>.from(data['elements']);
       }
-      
+
       // Try alternative format - maybe data is directly a list
       if (data is List) {
-        return List<Map<String, dynamic>>.from(data.map((e) => Map<String, dynamic>.from(e as Map)));
+        return List<Map<String, dynamic>>.from(
+            data.map((e) => Map<String, dynamic>.from(e as Map)));
       }
-      
+
       return [];
     } catch (e) {
       rethrow;

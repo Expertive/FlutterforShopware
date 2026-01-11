@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../data/repositories/orders_repository.dart';
-import '../core/config.dart';
+import '../core/config/app_config.dart';
 import '../core/services/shopware_api.dart';
 
 class GuestOrderLookupScreen extends StatefulWidget {
@@ -28,7 +28,7 @@ class _GuestOrderLookupScreenState extends State<GuestOrderLookupScreen> {
   @override
   void initState() {
     super.initState();
-    // Başlangıçta AppConfig'den primary color'ı al (main()'de yüklenmiş olacak)
+    // Start default color
     _primaryColor = _hexToColor(AppConfig.primaryColorHex);
     _loadPrimaryColor();
   }
@@ -36,14 +36,15 @@ class _GuestOrderLookupScreenState extends State<GuestOrderLookupScreen> {
   Future<void> _loadPrimaryColor() async {
     try {
       final config = await _api.getFlutterConfig();
-      final primaryColorStr = config['primaryColor'] as String? ?? AppConfig.primaryColorHex;
+      final primaryColorStr =
+          config['primaryColor'] as String? ?? AppConfig.primaryColorHex;
       if (mounted) {
         setState(() {
           _primaryColor = _hexToColor(primaryColorStr);
         });
       }
     } catch (e) {
-      // Hata durumunda AppConfig'deki değeri kullan
+      // Use default color if error occurs
       if (mounted) {
         setState(() {
           _primaryColor = _hexToColor(AppConfig.primaryColorHex);
@@ -117,7 +118,7 @@ class _GuestOrderLookupScreenState extends State<GuestOrderLookupScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Misafir Sipariş Sorgulama'),
+        title: const Text('Guest Order Lookup'),
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
       ),
@@ -136,7 +137,7 @@ class _GuestOrderLookupScreenState extends State<GuestOrderLookupScreen> {
               ),
               const SizedBox(height: 24),
               const Text(
-                'Siparişinizi Sorgulayın',
+                'Lookup Your Orders',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -145,7 +146,7 @@ class _GuestOrderLookupScreenState extends State<GuestOrderLookupScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'E-posta adresiniz ve posta kodunuz ile siparişlerinizi görüntüleyebilirsiniz.',
+                'Your email address and postal code can be used to view your orders.',
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey[600],
@@ -157,16 +158,16 @@ class _GuestOrderLookupScreenState extends State<GuestOrderLookupScreen> {
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(
-                  labelText: 'E-posta',
+                  labelText: 'Email',
                   hintText: 'ornek@email.com',
                   prefixIcon: Icon(Icons.email),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Lütfen e-posta adresinizi girin';
+                    return 'Please enter your email address';
                   }
                   if (!value.contains('@')) {
-                    return 'Geçerli bir e-posta adresi girin';
+                    return 'Please enter a valid email address';
                   }
                   return null;
                 },
@@ -176,7 +177,7 @@ class _GuestOrderLookupScreenState extends State<GuestOrderLookupScreen> {
                 controller: _zipcodeController,
                 keyboardType: TextInputType.text,
                 decoration: const InputDecoration(
-                  labelText: 'Posta Kodu',
+                  labelText: 'Postal Code',
                   hintText: '34000',
                   prefixIcon: Icon(Icons.location_on),
                 ),
@@ -186,7 +187,7 @@ class _GuestOrderLookupScreenState extends State<GuestOrderLookupScreen> {
                 controller: _deepLinkCodeController,
                 keyboardType: TextInputType.text,
                 decoration: const InputDecoration(
-                  labelText: 'Sipariş Kodu (Opsiyonel)',
+                  labelText: 'Order Code (Optional)',
                   hintText: 'ABC123',
                   prefixIcon: Icon(Icons.confirmation_number),
                 ),
@@ -205,10 +206,11 @@ class _GuestOrderLookupScreenState extends State<GuestOrderLookupScreen> {
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
                       )
-                    : const Text('Siparişleri Sorgula'),
+                    : const Text('Lookup Orders'),
               ),
               if (_error != null) ...[
                 const SizedBox(height: 16),
@@ -228,7 +230,7 @@ class _GuestOrderLookupScreenState extends State<GuestOrderLookupScreen> {
               if (_orders.isNotEmpty) ...[
                 const SizedBox(height: 32),
                 const Text(
-                  'Siparişleriniz',
+                  'Your Orders',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -261,9 +263,8 @@ class _GuestOrderLookupScreenState extends State<GuestOrderLookupScreen> {
     }
 
     final dateFormat = DateFormat('dd.MM.yyyy HH:mm');
-    final formattedDate = parsedDate != null 
-        ? dateFormat.format(parsedDate)
-        : 'Tarih bilinmiyor';
+    final formattedDate =
+        parsedDate != null ? dateFormat.format(parsedDate) : 'Date unknown';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -278,7 +279,7 @@ class _GuestOrderLookupScreenState extends State<GuestOrderLookupScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Sipariş #$orderNumber',
+                    'Order #$orderNumber',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -309,4 +310,3 @@ class _GuestOrderLookupScreenState extends State<GuestOrderLookupScreen> {
     );
   }
 }
-

@@ -7,7 +7,7 @@ import '../core/models/product.dart';
 import '../core/services/shopware_api.dart';
 import '../data/repositories/cart_repository.dart';
 import '../core/storage.dart';
-import '../core/config.dart';
+import '../core/config/app_config.dart';
 import '../core/api_client.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -45,7 +45,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   void initState() {
     super.initState();
-    // Başlangıçta AppConfig'den primary color'ı al (main()'de yüklenmiş olacak)
+    // Start default color
     _primaryColor = _hexToColor(AppConfig.primaryColorHex);
     _loadPrimaryColor();
     _loadProduct();
@@ -62,7 +62,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         });
       }
     } catch (e) {
-      // Hata durumunda AppConfig'deki değeri kullan
+      // Use default color if error occurs
       if (mounted) {
         setState(() {
           _primaryColor = _hexToColor(AppConfig.primaryColorHex);
@@ -88,7 +88,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         _error = null;
       });
 
-      // UUID formatını kontrol et ve gerekirse gerçek UUID'yi bul
+      // Check UUID format and if necessary find the actual UUID
       final isUuid = RegExp(r'^[0-9a-f]{32}$', caseSensitive: false)
           .hasMatch(widget.productId);
       String actualProductId = widget.productId;
@@ -111,11 +111,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           }
         } catch (searchError) {
           // Product search error
-          // Arama hatası, orijinal ID'yi kullan (hata verecek ama denemiş oluruz)
+          // Product search error, use original ID (will error but try)
         }
       }
 
-      // Product detayını POST ile al (configurator bilgisi için)
+      // Product detail by POST method for configurator information
       final dio = ApiClient.instance.dio;
       final response = await dio.post(
         '/store-api/product/$actualProductId',
@@ -162,7 +162,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         final variantId = foundCombination?['variantId']?.toString();
 
         if (variantId != null) {
-          // Varyant bulundu, ürünü yeniden yükle
+          // Variant found, reload product
           setState(() {
             _selectedVariantId = variantId;
           });
@@ -171,7 +171,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Varyant bulunamadı: $e')),
+            SnackBar(content: Text('Variant not found: $e')),
           );
         }
       }
@@ -451,10 +451,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                 const SizedBox(height: 24),
 
-                // Varyant Seçimi
+                // Variant Selection
                 if (_configurator.isNotEmpty) ...[
                   Text(
-                    'Varyant Seçimi',
+                    'Variant Selection',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
@@ -467,7 +467,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   const SizedBox(height: 24),
                 ],
 
-                // Açıklama - Modern Card
+                // Description - Modern Card
                 if (_product!.description.isNotEmpty) ...[
                   Text(
                     'Product Description',
@@ -619,7 +619,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     imageUrl =
                         coverUrl.startsWith('http') || coverUrl.startsWith('//')
                             ? coverUrl
-                            : 'http://localhost/shopware67/public$coverUrl';
+                            : '${AppConfig.baseUrl}$coverUrl';
                   }
 
                   return SizedBox(
@@ -916,11 +916,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  /// Stok durumuna göre renk döndürür
-  /// 0'dan aşağı ise kırmızı, 1 ise sarı, 1'den yüksek ise yeşil
+  /// Return color based on stock status
+  /// If less than 0, return red, if 1, return yellow, if greater than 1, return green
   Color _getStockColor(int? availableStock) {
     if (availableStock == null) {
-      // Stok bilgisi yoksa yeşil (mevcut davranış)
+      // If stock information is not available, return green (current behavior)
       return Colors.green;
     }
 
@@ -935,7 +935,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
   }
 
-  /// Returns text based on stock status
+  /// Return text based on stock status
   String _getStockStatusText(int? availableStock) {
     if (availableStock == null) {
       return 'In Stock';

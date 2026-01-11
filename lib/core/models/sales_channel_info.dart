@@ -1,4 +1,4 @@
-import 'package:flutter_shop_app/core/config.dart';
+import '../config/app_config.dart';
 
 class SalesChannelInfo {
   final String? id;

@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../core/models/product.dart';
 import '../core/services/shopware_api.dart';
 import '../widgets/product_card.dart';
-import '../core/config.dart';
+import '../core/config/app_config.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -26,7 +26,7 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   void initState() {
     super.initState();
-    // Başlangıçta AppConfig'den primary color'ı al (main()'de yüklenmiş olacak)
+    // Start default color
     _primaryColor = _hexToColor(AppConfig.primaryColorHex);
     _loadPrimaryColor();
   }
@@ -42,7 +42,7 @@ class _SearchScreenState extends State<SearchScreen> {
         });
       }
     } catch (e) {
-      // Hata durumunda AppConfig'deki değeri kullan
+      // Use default color if error occurs
       if (mounted) {
         setState(() {
           _primaryColor = _hexToColor(AppConfig.primaryColorHex);
@@ -161,7 +161,7 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
 
-          // Sonuçlar
+          // Results
           Expanded(
             child: _buildResults(),
           ),
@@ -178,7 +178,7 @@ class _SearchScreenState extends State<SearchScreen> {
           children: [
             CircularProgressIndicator(),
             SizedBox(height: 16),
-            Text('Aranıyor...'),
+            Text('Searching...'),
           ],
         ),
       );
@@ -203,7 +203,7 @@ class _SearchScreenState extends State<SearchScreen> {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () => _performSearch(_lastSearchQuery),
-              child: const Text('Tekrar Dene'),
+              child: const Text('Try Again'),
             ),
           ],
         ),
@@ -230,7 +230,7 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
             SizedBox(height: 8),
             Text(
-              'Farklı anahtar kelimeler deneyin',
+              'Try different keywords',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey,
@@ -268,11 +268,11 @@ class _SearchScreenState extends State<SearchScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Sonuç sayısı
+        // Result count
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Text(
-            '"$_lastSearchQuery" için ${_products.length} sonuç bulundu',
+            '"$_lastSearchQuery" for ${_products.length} results found',
             style: const TextStyle(
               fontSize: 14,
               color: Colors.grey,
@@ -282,7 +282,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
         const SizedBox(height: 8),
 
-        // Ürün listesi
+        // Product list
         Expanded(
           child: GridView.builder(
             padding: const EdgeInsets.all(16.0),

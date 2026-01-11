@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../data/repositories/cart_repository.dart';
 import '../core/services/shopware_api.dart';
-import '../core/config.dart';
+import '../core/config/app_config.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -31,7 +31,7 @@ class _CartScreenState extends State<CartScreen> {
   @override
   void initState() {
     super.initState();
-    // Başlangıçta AppConfig'den primary color'ı al (main()'de yüklenmiş olacak)
+    // Start default color
     _primaryColor = _hexToColor(AppConfig.primaryColorHex);
     _loadPrimaryColor();
     _load();
@@ -40,14 +40,15 @@ class _CartScreenState extends State<CartScreen> {
   Future<void> _loadPrimaryColor() async {
     try {
       final config = await _api.getFlutterConfig();
-      final primaryColorStr = config['primaryColor'] as String? ?? AppConfig.primaryColorHex;
+      final primaryColorStr =
+          config['primaryColor'] as String? ?? AppConfig.primaryColorHex;
       if (mounted) {
         setState(() {
           _primaryColor = _hexToColor(primaryColorStr);
         });
       }
     } catch (e) {
-      // Hata durumunda AppConfig'deki değeri kullan
+      // Use default color if error occurs
       if (mounted) {
         setState(() {
           _primaryColor = _hexToColor(AppConfig.primaryColorHex);
@@ -65,7 +66,6 @@ class _CartScreenState extends State<CartScreen> {
       return Colors.blue;
     }
   }
-
 
   Future<void> _load() async {
     setState(() {
@@ -222,7 +222,6 @@ class _CartScreenState extends State<CartScreen> {
       ],
     );
   }
-
 
   Widget _buildTotals() {
     final price = _cart?['price'] as Map<String, dynamic>?;

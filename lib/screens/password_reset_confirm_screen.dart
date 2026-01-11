@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/repositories/auth_repository.dart';
-import '../core/config.dart';
+import '../core/config/app_config.dart';
 import '../core/services/shopware_api.dart';
 
 class PasswordResetConfirmScreen extends StatefulWidget {
@@ -14,10 +14,12 @@ class PasswordResetConfirmScreen extends StatefulWidget {
   });
 
   @override
-  State<PasswordResetConfirmScreen> createState() => _PasswordResetConfirmScreenState();
+  State<PasswordResetConfirmScreen> createState() =>
+      _PasswordResetConfirmScreenState();
 }
 
-class _PasswordResetConfirmScreenState extends State<PasswordResetConfirmScreen> {
+class _PasswordResetConfirmScreenState
+    extends State<PasswordResetConfirmScreen> {
   final _formKey = GlobalKey<FormState>();
   final _passwordController = TextEditingController();
   final _passwordConfirmController = TextEditingController();
@@ -32,7 +34,7 @@ class _PasswordResetConfirmScreenState extends State<PasswordResetConfirmScreen>
   @override
   void initState() {
     super.initState();
-    // Başlangıçta AppConfig'den primary color'ı al (main()'de yüklenmiş olacak)
+    // Start default color
     _primaryColor = _hexToColor(AppConfig.primaryColorHex);
     _loadPrimaryColor();
   }
@@ -40,14 +42,15 @@ class _PasswordResetConfirmScreenState extends State<PasswordResetConfirmScreen>
   Future<void> _loadPrimaryColor() async {
     try {
       final config = await _api.getFlutterConfig();
-      final primaryColorStr = config['primaryColor'] as String? ?? AppConfig.primaryColorHex;
+      final primaryColorStr =
+          config['primaryColor'] as String? ?? AppConfig.primaryColorHex;
       if (mounted) {
         setState(() {
           _primaryColor = _hexToColor(primaryColorStr);
         });
       }
     } catch (e) {
-      // Hata durumunda AppConfig'deki değeri kullan
+      // Use default color if error occurs
       if (mounted) {
         setState(() {
           _primaryColor = _hexToColor(AppConfig.primaryColorHex);
@@ -100,7 +103,7 @@ class _PasswordResetConfirmScreenState extends State<PasswordResetConfirmScreen>
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Hata: $e'),
+            content: Text('Error: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -116,13 +119,11 @@ class _PasswordResetConfirmScreenState extends State<PasswordResetConfirmScreen>
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Yeni Şifre Belirle'),
+        title: const Text('Set New Password'),
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
       ),
-      body: _success
-          ? _buildSuccessView()
-          : _buildFormView(),
+      body: _success ? _buildSuccessView() : _buildFormView(),
     );
   }
 
@@ -142,7 +143,7 @@ class _PasswordResetConfirmScreenState extends State<PasswordResetConfirmScreen>
             ),
             const SizedBox(height: 24),
             const Text(
-              'Yeni Şifrenizi Belirleyin',
+              'Set New Password',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -151,7 +152,7 @@ class _PasswordResetConfirmScreenState extends State<PasswordResetConfirmScreen>
             ),
             const SizedBox(height: 8),
             Text(
-              'Güvenli bir şifre seçin. En az 8 karakter olmalıdır.',
+              'Select a secure password. It must be at least 8 characters long.',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
@@ -163,7 +164,7 @@ class _PasswordResetConfirmScreenState extends State<PasswordResetConfirmScreen>
               controller: _passwordController,
               obscureText: _obscurePassword,
               decoration: InputDecoration(
-                labelText: 'Yeni Şifre',
+                labelText: 'New Password',
                 prefixIcon: const Icon(Icons.lock),
                 suffixIcon: IconButton(
                   icon: Icon(
@@ -178,10 +179,10 @@ class _PasswordResetConfirmScreenState extends State<PasswordResetConfirmScreen>
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Lütfen şifrenizi girin';
+                  return 'Please enter your password';
                 }
                 if (value.length < 8) {
-                  return 'Şifre en az 8 karakter olmalıdır';
+                  return 'Password must be at least 8 characters long';
                 }
                 return null;
               },
@@ -191,11 +192,13 @@ class _PasswordResetConfirmScreenState extends State<PasswordResetConfirmScreen>
               controller: _passwordConfirmController,
               obscureText: _obscurePasswordConfirm,
               decoration: InputDecoration(
-                labelText: 'Yeni Şifre (Tekrar)',
+                labelText: 'New Password (Confirm)',
                 prefixIcon: const Icon(Icons.lock),
                 suffixIcon: IconButton(
                   icon: Icon(
-                    _obscurePasswordConfirm ? Icons.visibility : Icons.visibility_off,
+                    _obscurePasswordConfirm
+                        ? Icons.visibility
+                        : Icons.visibility_off,
                   ),
                   onPressed: () {
                     setState(() {
@@ -206,10 +209,10 @@ class _PasswordResetConfirmScreenState extends State<PasswordResetConfirmScreen>
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Lütfen şifrenizi tekrar girin';
+                  return 'Please enter your password again';
                 }
                 if (value != _passwordController.text) {
-                  return 'Şifreler eşleşmiyor';
+                  return 'Passwords do not match';
                 }
                 return null;
               },
@@ -231,7 +234,7 @@ class _PasswordResetConfirmScreenState extends State<PasswordResetConfirmScreen>
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                  : const Text('Şifreyi Güncelle'),
+                  : const Text('Update Password'),
             ),
           ],
         ),
@@ -253,7 +256,7 @@ class _PasswordResetConfirmScreenState extends State<PasswordResetConfirmScreen>
             ),
             const SizedBox(height: 24),
             const Text(
-              'Şifre Başarıyla Güncellendi',
+              'Password Updated Successfully',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -261,7 +264,7 @@ class _PasswordResetConfirmScreenState extends State<PasswordResetConfirmScreen>
             ),
             const SizedBox(height: 16),
             Text(
-              'Yeni şifrenizle giriş yapabilirsiniz.',
+              'You can now login with your new password.',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
@@ -274,9 +277,10 @@ class _PasswordResetConfirmScreenState extends State<PasswordResetConfirmScreen>
               style: ElevatedButton.styleFrom(
                 backgroundColor: _primaryColor,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               ),
-              child: const Text('Giriş Yap'),
+              child: const Text('Login'),
             ),
           ],
         ),
@@ -284,4 +288,3 @@ class _PasswordResetConfirmScreenState extends State<PasswordResetConfirmScreen>
     );
   }
 }
-

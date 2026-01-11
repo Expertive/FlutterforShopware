@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/services/shopware_api.dart';
-import '../core/config.dart';
+import '../core/config/app_config.dart';
 
 class ContactFormScreen extends StatefulWidget {
   const ContactFormScreen({super.key});
@@ -27,7 +27,7 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
   @override
   void initState() {
     super.initState();
-    // Başlangıçta AppConfig'den primary color'ı al (main()'de yüklenmiş olacak)
+    // Start default color
     _primaryColor = _hexToColor(AppConfig.primaryColorHex);
     _loadPrimaryColor();
   }
@@ -35,14 +35,15 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
   Future<void> _loadPrimaryColor() async {
     try {
       final config = await _api.getFlutterConfig();
-      final primaryColorStr = config['primaryColor'] as String? ?? AppConfig.primaryColorHex;
+      final primaryColorStr =
+          config['primaryColor'] as String? ?? AppConfig.primaryColorHex;
       if (mounted) {
         setState(() {
           _primaryColor = _hexToColor(primaryColorStr);
         });
       }
     } catch (e) {
-      // Hata durumunda AppConfig'deki değeri kullan
+      // Use default color if error occurs
       if (mounted) {
         setState(() {
           _primaryColor = _hexToColor(AppConfig.primaryColorHex);
@@ -108,7 +109,7 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Hata: $e'),
+            content: Text('Error: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -124,13 +125,11 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
-        title: const Text('İletişim'),
+        title: const Text('Contact'),
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
       ),
-      body: _success
-          ? _buildSuccessView()
-          : _buildFormView(),
+      body: _success ? _buildSuccessView() : _buildFormView(),
     );
   }
 
@@ -150,7 +149,7 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
             ),
             const SizedBox(height: 24),
             const Text(
-              'Bize Ulaşın',
+              'Contact Us',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -159,7 +158,7 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Sorularınız veya önerileriniz için bizimle iletişime geçin.',
+              'Contact us for your questions or suggestions.',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
@@ -176,10 +175,10 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Lütfen e-posta adresinizi girin';
+                  return 'Please enter your email address';
                 }
                 if (!value.contains('@')) {
-                  return 'Geçerli bir e-posta adresi girin';
+                  return 'Please enter a valid email address';
                 }
                 return null;
               },
@@ -188,12 +187,12 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
             TextFormField(
               controller: _subjectController,
               decoration: const InputDecoration(
-                labelText: 'Konu *',
+                labelText: 'Subject *',
                 prefixIcon: Icon(Icons.subject),
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Lütfen konu girin';
+                  return 'Please enter a subject';
                 }
                 return null;
               },
@@ -202,7 +201,7 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
             TextFormField(
               controller: _firstNameController,
               decoration: const InputDecoration(
-                labelText: 'Ad',
+                labelText: 'First Name',
                 prefixIcon: Icon(Icons.person),
               ),
             ),
@@ -210,7 +209,7 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
             TextFormField(
               controller: _lastNameController,
               decoration: const InputDecoration(
-                labelText: 'Soyad',
+                labelText: 'Last Name',
                 prefixIcon: Icon(Icons.person_outline),
               ),
             ),
@@ -219,7 +218,7 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
               controller: _phoneController,
               keyboardType: TextInputType.phone,
               decoration: const InputDecoration(
-                labelText: 'Telefon',
+                labelText: 'Phone',
                 prefixIcon: Icon(Icons.phone),
               ),
             ),
@@ -228,13 +227,13 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
               controller: _commentController,
               maxLines: 5,
               decoration: const InputDecoration(
-                labelText: 'Mesajınız *',
+                labelText: 'Your Message *',
                 prefixIcon: Icon(Icons.message),
                 alignLabelWithHint: true,
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Lütfen mesajınızı girin';
+                  return 'Please enter your message';
                 }
                 return null;
               },
@@ -256,7 +255,7 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                  : const Text('Gönder'),
+                  : const Text('Send'),
             ),
           ],
         ),
@@ -278,7 +277,7 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
             ),
             const SizedBox(height: 24),
             const Text(
-              'Mesajınız Gönderildi',
+              'Your Message Sent',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -286,7 +285,7 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Mesajınızı aldık. En kısa sürede size dönüş yapacağız.',
+              'We have received your message. We will get back to you as soon as possible.',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
@@ -309,9 +308,10 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: _primaryColor,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               ),
-              child: const Text('Yeni Mesaj Gönder'),
+              child: const Text('Send New Message'),
             ),
           ],
         ),
@@ -319,4 +319,3 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
     );
   }
 }
-

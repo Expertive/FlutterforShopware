@@ -2,17 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/repositories/auth_repository.dart';
-import '../core/config.dart';
+import '../core/config/app_config.dart';
 import '../core/services/shopware_api.dart';
 
 class PasswordResetRequestScreen extends StatefulWidget {
   const PasswordResetRequestScreen({super.key});
 
   @override
-  State<PasswordResetRequestScreen> createState() => _PasswordResetRequestScreenState();
+  State<PasswordResetRequestScreen> createState() =>
+      _PasswordResetRequestScreenState();
 }
 
-class _PasswordResetRequestScreenState extends State<PasswordResetRequestScreen> {
+class _PasswordResetRequestScreenState
+    extends State<PasswordResetRequestScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _authRepo = AuthRepository();
@@ -24,7 +26,7 @@ class _PasswordResetRequestScreenState extends State<PasswordResetRequestScreen>
   @override
   void initState() {
     super.initState();
-    // Başlangıçta AppConfig'den primary color'ı al (main()'de yüklenmiş olacak)
+    // Start default color
     _primaryColor = _hexToColor(AppConfig.primaryColorHex);
     _loadPrimaryColor();
   }
@@ -32,14 +34,15 @@ class _PasswordResetRequestScreenState extends State<PasswordResetRequestScreen>
   Future<void> _loadPrimaryColor() async {
     try {
       final config = await _api.getFlutterConfig();
-      final primaryColorStr = config['primaryColor'] as String? ?? AppConfig.primaryColorHex;
+      final primaryColorStr =
+          config['primaryColor'] as String? ?? AppConfig.primaryColorHex;
       if (mounted) {
         setState(() {
           _primaryColor = _hexToColor(primaryColorStr);
         });
       }
     } catch (e) {
-      // Hata durumunda AppConfig'deki değeri kullan
+      // Use default color if error occurs
       if (mounted) {
         setState(() {
           _primaryColor = _hexToColor(AppConfig.primaryColorHex);
@@ -89,7 +92,7 @@ class _PasswordResetRequestScreenState extends State<PasswordResetRequestScreen>
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Hata: $e'),
+            content: Text('Error: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -105,13 +108,11 @@ class _PasswordResetRequestScreenState extends State<PasswordResetRequestScreen>
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Şifre Sıfırlama'),
+        title: const Text('Password Reset'),
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
       ),
-      body: _success
-          ? _buildSuccessView()
-          : _buildFormView(),
+      body: _success ? _buildSuccessView() : _buildFormView(),
     );
   }
 
@@ -131,7 +132,7 @@ class _PasswordResetRequestScreenState extends State<PasswordResetRequestScreen>
             ),
             const SizedBox(height: 24),
             const Text(
-              'Şifrenizi mi unuttunuz?',
+              'Did you forget your password?',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -140,7 +141,7 @@ class _PasswordResetRequestScreenState extends State<PasswordResetRequestScreen>
             ),
             const SizedBox(height: 8),
             Text(
-              'E-posta adresinizi girin, size şifre sıfırlama bağlantısı gönderelim.',
+              'Enter your email address, we will send you a password reset link.',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
@@ -152,16 +153,16 @@ class _PasswordResetRequestScreenState extends State<PasswordResetRequestScreen>
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               decoration: const InputDecoration(
-                labelText: 'E-posta',
-                hintText: 'ornek@email.com',
+                labelText: 'Email',
+                hintText: 'example@email.com',
                 prefixIcon: Icon(Icons.email),
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Lütfen e-posta adresinizi girin';
+                  return 'Please enter your email address';
                 }
                 if (!value.contains('@')) {
-                  return 'Geçerli bir e-posta adresi girin';
+                  return 'Please enter a valid email address';
                 }
                 return null;
               },
@@ -183,7 +184,7 @@ class _PasswordResetRequestScreenState extends State<PasswordResetRequestScreen>
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                  : const Text('Şifre Sıfırlama Bağlantısı Gönder'),
+                  : const Text('Send Password Reset Link'),
             ),
           ],
         ),
@@ -205,7 +206,7 @@ class _PasswordResetRequestScreenState extends State<PasswordResetRequestScreen>
             ),
             const SizedBox(height: 24),
             const Text(
-              'E-posta Gönderildi',
+              'Email Sent',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -213,7 +214,7 @@ class _PasswordResetRequestScreenState extends State<PasswordResetRequestScreen>
             ),
             const SizedBox(height: 16),
             Text(
-              '${_emailController.text.trim()} adresine şifre sıfırlama bağlantısı gönderildi. Lütfen e-postanızı kontrol edin.',
+              '${_emailController.text.trim()} address. Please check your email.',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
@@ -226,9 +227,10 @@ class _PasswordResetRequestScreenState extends State<PasswordResetRequestScreen>
               style: ElevatedButton.styleFrom(
                 backgroundColor: _primaryColor,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               ),
-              child: const Text('Giriş Sayfasına Dön'),
+              child: const Text('Return to Login Page'),
             ),
           ],
         ),
@@ -236,4 +238,3 @@ class _PasswordResetRequestScreenState extends State<PasswordResetRequestScreen>
     );
   }
 }
-

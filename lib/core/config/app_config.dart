@@ -1,11 +1,52 @@
 class AppConfig {
+  AppConfig._();
+
   // Shopware API Configuration - These values are loaded from the Shopware config dynamically.
   // Note: These default values are only used for the initial load.
   // The actual values are loaded from the backend from the /store-api/flutter/config endpoint.
-  static String shopwareBaseUrl = 'https://demo.expertive.de/';
-  // The default value in the backend config.xml should be the same.
-  // This value is updated when loaded from the backend (shopware_api.dart)
-  static String salesChannelAccessKey = 'SWSCR2ZZS0LEBFRETUZHTJBFNA';
+
+  // Base URL for Shopware API - Single source of truth
+  static String baseUrl = const String.fromEnvironment(
+    'SHOPWARE_BASE_URL',
+    defaultValue: 'http://localhost/shopware67/public/',
+  );
+
+  // Sales Channel Access Key - Loaded from backend config endpoint
+  // Can be set via environment variable for initial connection, but will be updated from backend
+  static String salesChannelAccessKey = const String.fromEnvironment(
+    'SHOPWARE_ACCESS_KEY',
+    defaultValue: '', // Empty by default, will be loaded from backend
+  );
+
+  // Optional: sales channel domain for clarity/logging; not required for headers
+  static String salesChannelDomain = const String.fromEnvironment(
+    'SHOPWARE_SALES_CHANNEL_DOMAIN',
+    defaultValue: 'Storefront',
+  );
+
+  // Primary color hex (e.g. #1976D2). Screens should read this and apply.
+  static String primaryColorHex = '#1976D2';
+
+  // Timeout configurations
+  static const Duration connectTimeout = Duration(seconds: 10);
+  static const Duration receiveTimeout = Duration(seconds: 20);
+
+  // Update method for runtime configuration changes
+  static void update({
+    String? newBaseUrl,
+    String? newSalesChannelDomain,
+    String? newPrimaryColorHex,
+  }) {
+    if (newBaseUrl != null && newBaseUrl.isNotEmpty) {
+      baseUrl = newBaseUrl;
+    }
+    if (newSalesChannelDomain != null && newSalesChannelDomain.isNotEmpty) {
+      salesChannelDomain = newSalesChannelDomain;
+    }
+    if (newPrimaryColorHex != null && newPrimaryColorHex.isNotEmpty) {
+      primaryColorHex = newPrimaryColorHex;
+    }
+  }
 
   // API Endpoints
   // Layout endpoints are still coming from the plugin.

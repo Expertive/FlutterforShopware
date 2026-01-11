@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../core/config/app_config.dart' as AppConst;
+import '../core/config/app_config.dart';
 
 class MainDrawer extends StatelessWidget {
   const MainDrawer({
@@ -36,7 +36,7 @@ class MainDrawer extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    AppConst.AppConfig.appName,
+                    AppConfig.appName,
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -84,7 +84,7 @@ class MainDrawer extends StatelessWidget {
               padding:
                   const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
               child: Text(
-                '© ${DateTime.now().year} ${AppConst.AppConfig.appName}',
+                '© ${DateTime.now().year} ${AppConfig.appName}',
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       color: Colors.grey[600],
                     ),

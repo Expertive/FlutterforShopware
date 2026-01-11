@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/repositories/address_repository.dart';
-import '../core/config.dart';
+import '../core/config/app_config.dart';
 
 class AddressListScreen extends StatefulWidget {
   const AddressListScreen({super.key});

@@ -43,7 +43,7 @@ class Product {
           String url = media['url'];
           // Add base URL if not already present
           if (!url.startsWith('http://') && !url.startsWith('https://')) {
-            url = '${AppConfig.shopwareBaseUrl}$url';
+            url = '${AppConfig.baseUrl}$url';
           }
           imageUrl = url;
         }

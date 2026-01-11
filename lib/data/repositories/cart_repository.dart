@@ -10,8 +10,9 @@ class CartRepository {
       final resp = await _dio.get('/store-api/checkout/cart');
       return (resp.data as Map).cast<String, dynamic>();
     } catch (e) {
-      // Sepet yoksa oluştur
-      if (e is DioException && (e.response?.statusCode == 404 || e.response?.statusCode == 400)) {
+      // If cart not found, create it
+      if (e is DioException &&
+          (e.response?.statusCode == 404 || e.response?.statusCode == 400)) {
         return await createCart();
       }
       rethrow;
@@ -27,7 +28,8 @@ class CartRepository {
     try {
       await _dio.get('/store-api/checkout/cart');
     } catch (e) {
-      if (e is DioException && (e.response?.statusCode == 404 || e.response?.statusCode == 400)) {
+      if (e is DioException &&
+          (e.response?.statusCode == 404 || e.response?.statusCode == 400)) {
         await createCart();
       } else {
         rethrow;
@@ -55,7 +57,8 @@ class CartRepository {
     return (resp.data as Map).cast<String, dynamic>();
   }
 
-  Future<Map<String, dynamic>> removeLineItem({required String lineItemId}) async {
+  Future<Map<String, dynamic>> removeLineItem(
+      {required String lineItemId}) async {
     final resp = await _dio.post(
       '/store-api/checkout/cart/line-item/delete',
       data: {
@@ -71,44 +74,45 @@ class CartRepository {
     String? referencedProductId,
   }) async {
     await _ensureCart();
-    
-    // Önce sepeti alıp mevcut satırı bulalım
+
+    // First get the cart and find the current line
     final cart = await getCart();
     final lineItems = cart['lineItems'] as List?;
     final currentItem = lineItems?.firstWhere(
       (item) => (item as Map)['id']?.toString() == lineItemId,
       orElse: () => null,
     ) as Map<String, dynamic>?;
-    
+
     if (currentItem == null) {
-      // Satır bulunamadı, referencedId ile yeni ekle
+      // Line not found, add new with referencedId
       if (referencedProductId != null && quantity > 0) {
         return addProduct(productId: referencedProductId, quantity: quantity);
       }
-      throw Exception('Satır bulunamadı ve referencedId verilmemiş');
+      throw Exception('Line not found and referencedId not provided');
     }
-    
-    // Mevcut satırın type ve referencedId bilgilerini al
+
+    // Get the type and referencedId of the current line
     final type = currentItem['type']?.toString() ?? 'product';
-    final referencedId = currentItem['referencedId']?.toString() ?? referencedProductId;
-    
+    final referencedId =
+        currentItem['referencedId']?.toString() ?? referencedProductId;
+
     if (referencedId == null) {
-      throw Exception('referencedId bulunamadı');
+      throw Exception('referencedId not found');
     }
-    
-    // Eğer miktar 0 veya daha azsa, satırı sil
+
+    // If quantity is 0 or less, remove the line
     if (quantity <= 0) {
       await removeLineItem(lineItemId: lineItemId);
       return await getCart();
     }
-    
-    // Satırı silip yeni miktarla yeniden ekle (garantili çalışır)
+
+    // Remove the line and add new with quantity (guaranteed to work)
     await removeLineItem(lineItemId: lineItemId);
     if (type == 'product' && referencedId.isNotEmpty) {
       return addProduct(productId: referencedId, quantity: quantity);
     }
-    
-    // Type ve referencedId ile birlikte güncelle (fallback)
+
+    // Update with type and referencedId (fallback)
     final resp = await _dio.post(
       '/store-api/checkout/cart/line-item',
       data: {
@@ -140,5 +144,3 @@ class CartRepository {
     return (resp.data as Map).cast<String, dynamic>();
   }
 }
-
-

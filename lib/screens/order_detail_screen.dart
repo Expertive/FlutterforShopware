@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../data/repositories/orders_repository.dart';
-import '../core/config.dart';
+import '../core/config/app_config.dart';
 import '../core/services/shopware_api.dart';
 
 class OrderDetailScreen extends StatefulWidget {
@@ -31,7 +31,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   @override
   void initState() {
     super.initState();
-    // Başlangıçta AppConfig'den primary color'ı al (main()'de yüklenmiş olacak)
+    // Start default color
     _primaryColor = _hexToColor(AppConfig.primaryColorHex);
     _loadPrimaryColor();
     _loadOrder();
@@ -48,7 +48,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         });
       }
     } catch (e) {
-      // Hata durumunda AppConfig'deki değeri kullan
+      // Use default color if error occurs
       if (mounted) {
         setState(() {
           _primaryColor = _hexToColor(AppConfig.primaryColorHex);
@@ -99,14 +99,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       return 'Bilinmiyor';
     }
 
-    // Shopware payment/transaction durumlarını Türkçe'ye çevir
+    // Translate Shopware payment/transaction states to English
     switch (stateName.toLowerCase()) {
       case 'open':
-        return 'Açık';
+        return 'Open';
       case 'paid':
-        return 'Ödendi';
+        return 'Paid';
       case 'paid_partially':
-        return 'Kısmen Ödendi';
+        return 'Partially Paid';
       case 'in_progress':
         return 'In Progress';
       case 'authorized':
@@ -133,7 +133,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   String? _getPaymentStatusFromOrder(Map<String, dynamic> order) {
-    // Önce transactions array'inden payment status'u kontrol et
+    // First check transactions list from order
     final transactions = order['transactions'] as List?;
     if (transactions != null && transactions.isNotEmpty) {
       final firstTransaction = transactions[0] as Map<String, dynamic>?;
@@ -146,7 +146,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       }
     }
 
-    // Eğer transaction state yoksa, order'ın kendi state'ini kontrol et
+    // if transaction state is not found, check order's own state
     final stateMachineState =
         order['stateMachineState'] as Map<String, dynamic>?;
     return stateMachineState?['name']?.toString() ??
@@ -184,10 +184,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   String? _getShippingStatusFromOrder(Map<String, dynamic> order) {
-    // Deliveries array'inden shipping status'u kontrol et
+    // Check shipping status from deliveries list
     final deliveries = order['deliveries'] as List?;
     if (deliveries != null && deliveries.isNotEmpty) {
-      // En son delivery'yi al (genellikle en güncel durum)
+      // Get last delivery (usually the latest state)
       final lastDelivery =
           deliveries[deliveries.length - 1] as Map<String, dynamic>?;
       final deliveryState =
@@ -305,11 +305,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     final orderNumber = _order!['orderNumber']?.toString() ?? 'N/A';
     final orderDate = _order!['orderDateTime']?.toString();
 
-    // Payment status'u al
+    // Get payment status from order
     final rawPaymentStatus = _getPaymentStatusFromOrder(_order!);
     final paymentStatus = _getPaymentStatusText(rawPaymentStatus);
 
-    // Shipping status'u al
+    // Get shipping status from order
     final rawShippingStatus = _getShippingStatusFromOrder(_order!);
     final shippingStatus = _getShippingStatusText(rawShippingStatus);
 
@@ -324,7 +324,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
     final dateFormat = DateFormat('dd.MM.yyyy HH:mm');
     final formattedDate =
-        parsedDate != null ? dateFormat.format(parsedDate) : 'Tarih bilinmiyor';
+        parsedDate != null ? dateFormat.format(parsedDate) : 'Date unknown';
 
     return Card(
       child: Padding(
@@ -413,7 +413,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Sipariş Öğeleri',
+              'Order Items',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -506,19 +506,19 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     final shippingAddress = _order!['deliveries']?[0]?['shippingOrderAddress']
         as Map<String, dynamic>?;
 
-    // Her iki adres de yoksa hiçbir şey gösterme
+    // If both addresses are not found, show nothing
     if (billingAddress == null && shippingAddress == null) {
       return const SizedBox.shrink();
     }
 
-    // Tek bir adres varsa tam genişlikte göster
+    // If only one address is found, show it full width
     if (billingAddress == null || shippingAddress == null) {
       return billingAddress != null
           ? _buildAddressCard('Billing Address', billingAddress)
           : _buildAddressCard('Shipping Address', shippingAddress!);
     }
 
-    // Her iki adres de varsa yan yana göster
+    // If both addresses are found, show them side by side
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -620,25 +620,25 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     final shippingCosts = _order!['shippingCosts'] as Map<String, dynamic>?;
     final shippingTotal = shippingCosts?['totalPrice'] as num? ?? 0.0;
 
-    // KDV bilgisini hesapla
+    // Calculate taxes
     final calculatedTaxes = price?['calculatedTaxes'] as List?;
     num totalTax = 0.0;
     num? taxRate;
 
     if (calculatedTaxes != null && calculatedTaxes.isNotEmpty) {
-      // Tüm KDV'leri topla
+      // Add up all taxes
       for (var tax in calculatedTaxes) {
         if (tax is Map<String, dynamic>) {
           final taxAmount = tax['tax'] as num? ?? 0.0;
           totalTax += taxAmount;
-          // İlk KDV oranını al (genellikle hepsi aynı)
+          // Get first tax rate (usually all the same)
           if (taxRate == null) {
             taxRate = tax['taxRate'] as num?;
           }
         }
       }
     } else {
-      // Eğer calculatedTaxes yoksa, totalPrice - netPrice'dan hesapla
+      // If calculatedTaxes is not found, calculate from totalPrice - netPrice
       totalTax = totalPrice - netPrice;
     }
 
@@ -721,7 +721,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           ...documents.map((doc) {
             final docId = doc['id']?.toString() ?? '';
             final deepLinkCode = doc['deepLinkCode']?.toString() ?? '';
-            final docType = doc['documentType']?['name']?.toString() ?? 'Document';
+            final docType =
+                doc['documentType']?['name']?.toString() ?? 'Document';
 
             return SizedBox(
               width: double.infinity,
@@ -743,8 +744,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   Future<void> _downloadDocument(String documentId, String deepLinkCode) async {
     try {
-      // Store API document download endpoint'ini kullan
-      final baseUrl = 'http://localhost/shopware67/public';
+      // Use Store API document download endpoint
+      final baseUrl = AppConfig.baseUrl;
       final url =
           '$baseUrl/store-api/document/download/$documentId/$deepLinkCode';
 

@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../data/repositories/auth_repository.dart';
 import '../core/services/shopware_api.dart';
-import '../core/config.dart';
+import '../core/config/app_config.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -35,7 +35,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   void initState() {
     super.initState();
-    // Başlangıçta AppConfig'den primary color'ı al (main()'de yüklenmiş olacak)
+    // Start default color
     _primaryColor = _hexToColor(AppConfig.primaryColorHex);
     _loadPrimaryColor();
   }
@@ -43,14 +43,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _loadPrimaryColor() async {
     try {
       final config = await _api.getFlutterConfig();
-      final primaryColorStr = config['primaryColor'] as String? ?? AppConfig.primaryColorHex;
+      final primaryColorStr =
+          config['primaryColor'] as String? ?? AppConfig.primaryColorHex;
       if (mounted) {
         setState(() {
           _primaryColor = _hexToColor(primaryColorStr);
         });
       }
     } catch (e) {
-      // Hata durumunda AppConfig'deki değeri kullan
+      // Use default color if error occurs
       if (mounted) {
         setState(() {
           _primaryColor = _hexToColor(AppConfig.primaryColorHex);
@@ -95,7 +96,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registration successful')),
+          const SnackBar(content: Text('Registration Successful')),
         );
         context.go('/');
       }
@@ -120,7 +121,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => _handleBack(context),
         ),
-        title: const Text('Register'),
+        title: const Text('Register New Account'),
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
         actions: [
@@ -138,47 +139,57 @@ class _RegisterScreenState extends State<RegisterScreen> {
             children: [
               TextFormField(
                 controller: _emailController,
-                decoration: const InputDecoration(labelText: 'Email'),
+                decoration: const InputDecoration(labelText: 'Email Address'),
                 keyboardType: TextInputType.emailAddress,
-                validator: (v) => (v == null || v.isEmpty) ? 'Email required' : null,
+                validator: (v) =>
+                    (v == null || v.isEmpty) ? 'Email address required' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _passwordController,
-                decoration: const InputDecoration(labelText: 'Password'),
+                decoration: const InputDecoration(labelText: 'New Password'),
                 obscureText: true,
-                validator: (v) => (v == null || v.isEmpty) ? 'Password required' : null,
+                validator: (v) =>
+                    (v == null || v.isEmpty) ? 'New password required' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _firstNameController,
-                decoration: const InputDecoration(labelText: 'First Name'),
-                validator: (v) => (v == null || v.isEmpty) ? 'First name required' : null,
+                decoration:
+                    const InputDecoration(labelText: 'First Name (Optional) '),
+                validator: (v) =>
+                    (v == null || v.isEmpty) ? 'First name required' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _lastNameController,
                 decoration: const InputDecoration(labelText: 'Last Name'),
-                validator: (v) => (v == null || v.isEmpty) ? 'Last name required' : null,
+                validator: (v) =>
+                    (v == null || v.isEmpty) ? 'Last name required' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _salutationIdController,
                 decoration: const InputDecoration(labelText: 'Salutation ID'),
-                validator: (v) => (v == null || v.isEmpty) ? 'Salutation ID required' : null,
+                validator: (v) =>
+                    (v == null || v.isEmpty) ? 'Salutation ID required' : null,
               ),
               const SizedBox(height: 16),
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8.0),
-                  child: Text(_error!, style: const TextStyle(color: Colors.red)),
+                  child:
+                      Text(_error!, style: const TextStyle(color: Colors.red)),
                 ),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _loading ? null : _submit,
                   child: _loading
-                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2))
                       : const Text('Register'),
                 ),
               ),
@@ -189,5 +200,3 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 }
-
-

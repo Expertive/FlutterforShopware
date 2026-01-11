@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:webview_flutter/webview_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
+// WebView import - only for mobile platforms
+// On web, we use url_launcher instead
+import 'package:webview_flutter/webview_flutter.dart';
 
 import 'shopware_api.dart';
 import '../../widgets/product_slider.dart';
@@ -24,18 +27,18 @@ class DynamicLayoutService {
       final cmsData = await _api.getLayout(pageId);
 
       // If data is empty or null, return null (fallback layout will be used)
-      if (cmsData.isEmpty) {
+      if (cmsData is Map && cmsData.isEmpty) {
         return null;
       }
 
       // If sections exist (direct Shopware CMS page structure), convert to Flutter format
-      if (cmsData.containsKey('sections')) {
+      if (cmsData is Map && cmsData.containsKey('sections')) {
         return _buildWidgetFromCms(cmsData, context);
       }
 
       // If type and child exist (flutter/layout endpoint), use directly
       // Backend sometimes returns JSON with type/child even in error cases
-      if (cmsData.containsKey('child') || cmsData.containsKey('type')) {
+      if (cmsData is Map && (cmsData.containsKey('child') || cmsData.containsKey('type'))) {
         return _buildWidget(cmsData, context);
       }
 
@@ -71,7 +74,17 @@ class DynamicLayoutService {
     // Eğer type: SingleChildScrollView ise, direkt build et
     final type = layoutData['type']?.toString();
     if (type == 'SingleChildScrollView') {
-      return _buildChild(layoutData, context);
+      if (layoutData.containsKey('child')) {
+        // SingleChildScrollView with child
+        return SingleChildScrollView(
+          child: _buildChild(layoutData['child'], context),
+        );
+      } else {
+        // SingleChildScrollView without child - return empty
+        return const SingleChildScrollView(
+          child: SizedBox.shrink(),
+        );
+      }
     }
 
     // If type: Container and child exists, directly build the child
@@ -703,14 +716,49 @@ class DynamicLayoutService {
     final youtubeUrl =
         'https://www.youtube.com/embed/$videoId?${params.join('&')}';
 
-    // Create WebView controller
-    final controller = WebViewController();
-
-    // On web platform, only loadRequest is called
+    // On web platform, use link button instead of WebView
     if (kIsWeb) {
-      controller.loadRequest(Uri.parse(youtubeUrl));
-    } else {
-      // Mobile platform, all features can be used
+      return Container(
+        width: width,
+        height: height,
+        padding: const EdgeInsets.all(8.0),
+        child: Card(
+          child: InkWell(
+            onTap: () async {
+              final uri = Uri.parse('https://www.youtube.com/watch?v=$videoId');
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            },
+            child: Container(
+              width: double.infinity,
+              height: double.infinity,
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.play_circle_filled, size: 48, color: Colors.red),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Watch on YouTube',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.red,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Mobile platform - use WebView
+    try {
+      // Create WebView controller
+      final controller = WebViewController();
       controller
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
         ..setNavigationDelegate(
@@ -721,14 +769,26 @@ class DynamicLayoutService {
           ),
         )
         ..loadRequest(Uri.parse(youtubeUrl));
-    }
 
-    return Container(
-      width: width,
-      height: height,
-      padding: const EdgeInsets.all(8.0),
-      child: WebViewWidget(controller: controller),
-    );
+      return Container(
+        width: width,
+        height: height,
+        padding: const EdgeInsets.all(8.0),
+        child: WebViewWidget(controller: controller),
+      );
+    } catch (e) {
+      // WebView initialization error - show fallback
+      return Container(
+        width: width,
+        height: height,
+        padding: const EdgeInsets.all(8.0),
+        child: Card(
+          child: Center(
+            child: Text('YouTube Error: $e'),
+          ),
+        ),
+      );
+    }
   }
 
   Widget _buildWebView(Map<String, dynamic> webViewData) {
@@ -743,14 +803,60 @@ class DynamicLayoutService {
         ? double.infinity
         : (widthStr != null ? double.tryParse(widthStr) : null);
 
-    // Create WebView controller
-    final controller = WebViewController();
-
-    // On web platform, only loadRequest is called
+    // On web platform, use a link button instead of WebView
     if (kIsWeb) {
-      controller.loadRequest(Uri.parse(url));
-    } else {
-      // Mobile platform, all features can be used
+      return Container(
+        width: width,
+        height: height,
+        padding: const EdgeInsets.all(8.0),
+        child: Card(
+          child: InkWell(
+            onTap: () async {
+              final uri = Uri.parse(url);
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            },
+            child: Container(
+              width: double.infinity,
+              height: double.infinity,
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.open_in_browser, size: 48, color: Colors.blue),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Open in Browser',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.blue[700],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    url,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Mobile platform - use WebView
+    try {
+      // Create WebView controller
+      final controller = WebViewController();
       controller
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
         ..setNavigationDelegate(
@@ -761,14 +867,26 @@ class DynamicLayoutService {
           ),
         )
         ..loadRequest(Uri.parse(url));
-    }
 
-    return Container(
-      width: width,
-      height: height,
-      padding: const EdgeInsets.all(8.0),
-      child: WebViewWidget(controller: controller),
-    );
+      return Container(
+        width: width,
+        height: height,
+        padding: const EdgeInsets.all(8.0),
+        child: WebViewWidget(controller: controller),
+      );
+    } catch (e) {
+      // WebView initialization error - show fallback
+      return Container(
+        width: width,
+        height: height,
+        padding: const EdgeInsets.all(8.0),
+        child: Card(
+          child: Center(
+            child: Text('WebView Error: $e'),
+          ),
+        ),
+      );
+    }
   }
 
   Widget _buildFlutterProductSlider(Map<String, dynamic> sliderData) {

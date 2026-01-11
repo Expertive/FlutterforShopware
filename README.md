@@ -41,7 +41,8 @@ static const String defaultHomePageId = 'YOUR_CMS_PAGE_ID';
 
 3. **Run the application:**
 ```bash
-flutter run
+flutter run --dart-define=SHOPWARE_ACCESS_KEY=xx
+
 ```
 
 ## Project Structure
@@ -175,20 +176,20 @@ GoRoute(
 ### Android
 
 ```bash
-flutter build apk --release
+flutter build apk --release --dart-define=SHOPWARE_ACCESS_KEY=XX
 ```
 
 ### iOS
 
 ```bash
-flutter build ios --release
+flutter build ios --release --dart-define=SHOPWARE_ACCESS_KEY=XX
 ```
 
 ## Testing
 
 ```bash
 # Unit tests
-flutter test
+flutter test --dart-define=SHOPWARE_ACCESS_KEY=XX
 
 # Integration tests
 flutter drive --target=test_driver/app.dart

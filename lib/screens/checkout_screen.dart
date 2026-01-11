@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../core/config.dart';
+import '../core/config/app_config.dart';
 import '../core/services/shopware_api.dart';
 import '../data/repositories/address_repository.dart';
 import '../data/repositories/cart_repository.dart';
@@ -45,7 +45,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   @override
   void initState() {
     super.initState();
-    // Başlangıçta AppConfig'den primary color'ı al (main()'de yüklenmiş olacak)
+    // Start default color
     _primaryColor = _hexToColor(AppConfig.primaryColorHex);
     _loadPrimaryColor();
     _load();
@@ -62,7 +62,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         });
       }
     } catch (e) {
-      // Hata durumunda AppConfig'deki değeri kullan
+      // Use default color if error occurs
       if (mounted) {
         setState(() {
           _primaryColor = _hexToColor(AppConfig.primaryColorHex);
@@ -103,12 +103,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ? _paymentMethods.first['id']?.toString()
             : null;
         if (_addresses.isNotEmpty) {
-          // İlk adresi varsayılan olarak seç (kullanıcı değiştirebilir)
+          // Select first address as default (user can change it)
           _selectedBillingAddressId = _addresses.first['id']?.toString();
           _selectedShippingAddressId = _addresses.first['id']?.toString();
         }
       });
-      // İlk yüklemede context'i güncelle (adres + methodlar)
+      // Update context on first load (address + methods)
       await _repo.updateContext(
         shippingMethodId: _selectedShipping,
         paymentMethodId: _selectedPayment,
@@ -136,7 +136,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
     setState(() => _placing = true);
 
-    // Cart'ı kontrol et - hataları göster (try bloğundan önce)
+    // Check cart - show errors (before try block)
     final cart = await CartRepository().getCart();
     final errors = cart['errors'];
     if (errors != null) {
@@ -144,7 +144,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       if (errors is List) {
         errorList = errors;
       } else if (errors is Map) {
-        // Eğer errors bir Map ise, değerlerini al
+        // If errors is a Map, get values
         errorList = errors.values.toList();
       } else {
         errorList = [];
@@ -176,13 +176,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ));
           }
           setState(() => _placing = false);
-          return; // Metoddan çık
+          return; // Exit method
         }
       }
     }
 
     try {
-      // Context'te customer olup olmadığını kontrol et
+      // Check if customer is in context
       try {
         final apiService = ShopwareApi();
         final contextData = await apiService.getSalesChannelContext();
@@ -202,10 +202,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         }
       } catch (e) {
         // Error checking customer context
-        // Context kontrolü başarısız olsa bile devam et
+        // Continue even if customer context check fails
       }
 
-      // Önce context'i tüm bilgilerle güncelle
+      // First update context with all information
       await _repo.updateContext(
         shippingMethodId: _selectedShipping,
         paymentMethodId: _selectedPayment,
@@ -213,7 +213,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         shippingAddressId: _selectedShippingAddressId,
       );
 
-      // Sonra siparişi oluştur
+      // Then create order
       final orderResp = await _repo.createOrder(
         shippingMethodId: _selectedShipping,
         paymentMethodId: _selectedPayment,
@@ -229,7 +229,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       });
 
       if (!identifiers.hasRequiredIds) {
-        // Sipariş oluşturuldu ama ödeme için gerekli kimlikler yok
+        // Order created but required identifiers for payment are missing
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -240,10 +240,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
           );
         }
-        return; // Sipariş oluştu ama ödeme yapılamadı
+        return; // Order created but payment cannot be made
       }
 
-      // Ödeme işlemini başlat
+      // Start payment process
       try {
         final paymentResp = await _repo.handlePayment(
           orderId: identifiers.orderId!,
@@ -260,10 +260,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           await _handlePaymentResult(paymentResp);
         }
       } catch (paymentError) {
-        // Ödeme hatası olsa bile sipariş oluştu
+        // Payment error (but order created)
         // Payment error (but order created)
 
-        // Ödeme hatasını logla ama kullanıcıya sipariş başarılı mesajı göster
+        // Log payment error but show success message to user
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -278,7 +278,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     } catch (e) {
       String errorMessage = 'Payment error: $e';
 
-      // DioException hatalarını parse et
+      // Parse DioException errors
       if (e is DioException && e.response != null) {
         final data = e.response?.data;
         if (data is Map) {
@@ -450,7 +450,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   ],
                   if (_orderIdentifiers?.orderTransactionId != null) ...[
                     const SizedBox(height: 4),
-                    Text('Transaction ID: ${_orderIdentifiers!.orderTransactionId}'),
+                    Text(
+                        'Transaction ID: ${_orderIdentifiers!.orderTransactionId}'),
                   ],
                   if (_paymentResponse != null &&
                       _paymentResponse!.isNotEmpty) ...[
@@ -487,7 +488,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       final orderId = _orderIdentifiers!.orderId!;
       final paymentUrl = '${baseUrl}account/order/edit/$orderId';
       final uri = Uri.parse(paymentUrl);
-      
+
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
@@ -507,7 +508,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildBottomBar() {
-    // Eğer sipariş oluşturulduysa "Ödemeyi Tamamla" butonunu göster
+    // If order is created, show "Complete Payment" button
     if (_orderIdentifiers?.orderId != null) {
       return SafeArea(
         child: Padding(
@@ -527,7 +528,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       );
     }
 
-    // Sipariş oluşturulmadıysa "Siparişi Tamamla" butonunu göster
+    // If order is not created, show "Complete Order" button
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -601,7 +602,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         if (!launched) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Tarayıcı açılamadı: $redirectUrl'),
+              content: Text('Could not open browser: $redirectUrl'),
               backgroundColor: Colors.red,
             ),
           );
@@ -609,7 +610,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Invalid redirect URL: $redirectUrl'),
+            content: Text('Invalid redirect URL: $redirectUrl'),
             backgroundColor: Colors.red,
           ),
         );
@@ -640,7 +641,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     if (status != null && status.toString().isNotEmpty) {
       return 'Payment status: ${status.toString()}';
     }
-    return 'Ödeme isteği başarıyla gönderildi.';
+    return 'Payment request sent successfully.';
   }
 
   String _buildFinishUrl() {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 
@@ -38,6 +39,9 @@ class _ProductSliderState extends State<ProductSlider> {
           height: widget.height,
           child: PageView.builder(
             controller: _pageController,
+            physics: kIsWeb
+                ? const PageScrollPhysics() // Web için daha smooth scroll
+                : const BouncingScrollPhysics(), // Mobile için bounce effect
             onPageChanged: (index) {
               setState(() {
                 _currentPage = index;
@@ -88,19 +92,20 @@ class _ProductSliderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final imageUrl = product['imageUrl'] as String?;
-    final name = product['name'] as String? ?? 'Ürün';
+    final name = product['name'] as String? ?? 'Product';
     final price = product['price'] as Map<String, dynamic>?;
     final gross = price?['gross'] ?? 0.0;
 
-    return GestureDetector(
+    return InkWell(
       onTap: () {
         final productId = product['id'];
         if (productId != null) {
           context.go('/product/$productId');
         }
       },
+      borderRadius: BorderRadius.circular(16),
       child: Hero(
-        tag: 'product_${product['id']}',
+        tag: 'product_slider_${product['id']}',
         child: Container(
           decoration: BoxDecoration(
             color: Colors.white,
@@ -119,29 +124,39 @@ class _ProductSliderCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-              // Ürün görseli
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(16),
-                ),
-                                 child: Stack(
-                  children: [
-                    imageUrl != null
-                        ? CachedNetworkImage(
-                            imageUrl: imageUrl,
-                            height: 160,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(
+                // Product image
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(16),
+                  ),
+                  child: Stack(
+                    children: [
+                      imageUrl != null
+                          ? CachedNetworkImage(
+                              imageUrl: imageUrl,
                               height: 160,
-                              color: Colors.grey[100],
-                              child: const Center(
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                height: 160,
+                                color: Colors.grey[100],
+                                child: const Center(
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 ),
                               ),
-                            ),
-                            errorWidget: (context, url, error) => Container(
+                              errorWidget: (context, url, error) => Container(
+                                height: 160,
+                                color: Colors.grey[100],
+                                child: const Icon(
+                                  Icons.image,
+                                  size: 48,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            )
+                          : Container(
                               height: 160,
                               color: Colors.grey[100],
                               child: const Icon(
@@ -150,111 +165,102 @@ class _ProductSliderCard extends StatelessWidget {
                                 color: Colors.grey,
                               ),
                             ),
-                          )
-                        : Container(
-                            height: 160,
-                            color: Colors.grey[100],
-                            child: const Icon(
-                              Icons.image,
-                              size: 48,
-                              color: Colors.grey,
+                      // Gradient overlay
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          height: 60,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withOpacity(0.3),
+                              ],
                             ),
-                          ),
-                    // Gradient overlay
-                    Positioned(
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      child: Container(
-                        height: 60,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withOpacity(0.3),
-                            ],
                           ),
                         ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Ürün bilgileri
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Ürün adı
-                      Text(
-                        name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      // Ürün açıklaması (varsa)
-                      if (product['description'] != null && 
-                          (product['description'] as String).isNotEmpty) ...[
-                        Text(
-                          (product['description'] as String).length > 80
-                              ? '${(product['description'] as String).substring(0, 80)}...'
-                              : product['description'] as String,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey[600],
-                            height: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                      ],
-                      const Spacer(),
-                      // Fiyat ve buton
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              '${gross.toStringAsFixed(2)} €',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue,
-                              ),
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: const Icon(
-                              Icons.shopping_cart,
-                              size: 16,
-                              color: Colors.blue,
-                            ),
-                          ),
-                        ],
                       ),
                     ],
                   ),
                 ),
-              ),
-            ],
+
+                // Product information
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12.0, vertical: 8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Product name
+                        Text(
+                          name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        // Product description (if available)
+                        if (product['description'] != null &&
+                            (product['description'] as String).isNotEmpty) ...[
+                          Text(
+                            (product['description'] as String).length > 80
+                                ? '${(product['description'] as String).substring(0, 80)}...'
+                                : product['description'] as String,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey[600],
+                              height: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                        ],
+                        const Spacer(),
+                        // Price and button
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${gross.toStringAsFixed(2)} €',
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Icon(
+                                Icons.shopping_cart,
+                                size: 16,
+                                color: Colors.blue,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),

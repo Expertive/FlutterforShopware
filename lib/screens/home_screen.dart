@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/painting.dart' show imageCache;
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -7,8 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../core/services/dynamic_layout_service.dart';
 import '../core/services/shopware_api.dart';
-import '../core/config.dart';
-import '../core/config/app_config.dart' as AppConfigCore;
+import '../core/config/app_config.dart';
 import '../core/storage.dart';
 import '../data/repositories/auth_repository.dart';
 import '../core/models/sales_channel_info.dart';
@@ -35,8 +34,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _drawerParentCategoryId; // current level
   final List<String> _drawerBreadcrumb = <String>[]; // path stack
   String? _drawerCurrentCategoryName; // current level name
-  
-  // Dil ve Kur seçimi için
+
+  // For language and currency selection
   List<Map<String, dynamic>> _availableLanguages = [];
   List<Map<String, dynamic>> _availableCurrencies = [];
   bool _loadingLanguagesCurrencies = false;
@@ -44,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Başlangıçta AppConfig'den primary color'ı al (main()'de yüklenmiş olacak)
+    // Start default color
     _primaryColor = _hexToColor(AppConfig.primaryColorHex);
     _loadHomeLayout();
     _checkCookieConsent();
@@ -107,21 +106,10 @@ class _HomeScreenState extends State<HomeScreen> {
         // Base URL updated
       }
 
-      // Config yüklendikten sonr a sales channel context'i yüklenir
+      // After config is loaded, load sales channel context
       // So the correct baseUrl is used for requests
       try {
-        if (kDebugMode) {
-          print('=== Loading Sales Channel Context ===');
-          final token = await TokenStorage.instance.loadContextToken();
-          print('Current context token: $token');
-        }
         final contextData = await _api.getSalesChannelContext();
-        if (kDebugMode) {
-          final language = contextData['language'] as Map<String, dynamic>?;
-          final currency = contextData['currency'] as Map<String, dynamic>?;
-          print('Context Language ID: ${language?['id']}, Name: ${language?['name']}');
-          print('Context Currency ID: ${currency?['id']}, ISO: ${currency?['isoCode']}');
-        }
         final salesChannelInfo = SalesChannelInfo.fromContext(contextData);
         if (mounted) {
           setState(() {
@@ -131,11 +119,7 @@ class _HomeScreenState extends State<HomeScreen> {
         // Load language and currency lists
         _loadLanguagesAndCurrencies(contextData);
       } catch (e) {
-        if (kDebugMode) {
-          print('Error loading sales channel context: $e');
-        }
         // Error loading sales channel context (continue even on error, use default values)
-        // Continue even on error, use default values
       }
 
       final primaryColorStr = config['primaryColor'] as String? ?? '#1976D2';
@@ -148,12 +132,6 @@ class _HomeScreenState extends State<HomeScreen> {
       final homePageId = config['pages']?['home'];
       if (homePageId != null && homePageId.isNotEmpty) {
         try {
-          if (kDebugMode) {
-            print('=== Loading Layout ===');
-            print('Home Page ID: $homePageId');
-            final token = await TokenStorage.instance.loadContextToken();
-            print('Context token before layout load: $token');
-          }
           final layoutWidget =
               await _layoutService.loadLayout(homePageId, context);
           if (mounted) {
@@ -163,9 +141,6 @@ class _HomeScreenState extends State<HomeScreen> {
             });
           }
         } catch (layoutError) {
-          if (kDebugMode) {
-            print('Layout loading error: $layoutError');
-          }
           // Layout loading error - show fallback layout (continue even on error, use default values)
           // Layout loading error - show fallback layout
           if (mounted) {
@@ -194,17 +169,28 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  /// Drawer için kategori listesini getir
-  /// Başlangıçta (_drawerParentCategoryId null) sadece alt kategorileri göster
-  /// Ana kategori seçildiğinde o ana kategorinin alt kategorilerini göster
+  /// Check if user is actually logged in (not just has context token)
+  Future<bool> _checkIfLoggedIn() async {
+    try {
+      await AuthRepository().me();
+      return true;
+    } catch (e) {
+      // 403 or any error means not logged in
+      return false;
+    }
+  }
+
+  /// Get category list for drawer
+  /// Initially (_drawerParentCategoryId null) only show subcategories
+  /// When a category is selected, show the subcategories of that category
   Future<List<Category>> _getCategoriesForDrawer() async {
     if (_drawerParentCategoryId != null) {
-      // Ana kategori seçilmişse, o ana kategorinin alt kategorilerini getir
+      // When a category is selected, get the subcategories of that category
       return await _api.getCategories(parentId: _drawerParentCategoryId);
     } else {
-      // Başlangıçta: Tüm kategorileri al (filtreleme yapmadan), sadece alt kategorileri (parentId != null) döndür
+      // Initially: Get all categories (without filtering), only return subcategories (parentId != null)
       final allCategories = await _api.getCategories(limit: 100, showAll: true);
-      // Sadece alt kategorileri filtrele (parentId != null)
+      // Only filter subcategories (parentId != null)
       return allCategories.where((cat) => cat.parentId != null).toList();
     }
   }
@@ -274,28 +260,30 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // AppBar'da sadece text göster (logo DrawerHeader'da)
     return Text(
-      _salesChannelInfo?.name ?? AppConfigCore.AppConfig.appName,
+      _salesChannelInfo?.name ?? AppConfig.appName,
       style: const TextStyle(fontSize: 18),
       overflow: TextOverflow.ellipsis,
     );
   }
 
   // Load language and currency lists
-  Future<void> _loadLanguagesAndCurrencies(Map<String, dynamic>? contextData) async {
+  Future<void> _loadLanguagesAndCurrencies(
+      Map<String, dynamic>? contextData) async {
     if (_loadingLanguagesCurrencies) return;
-    
+
     setState(() {
       _loadingLanguagesCurrencies = true;
     });
 
     try {
-      final salesChannel = contextData?['salesChannel'] as Map<String, dynamic>?;
-      
-      // Önce sales channel'dan dil ve kur listelerini al
+      final salesChannel =
+          contextData?['salesChannel'] as Map<String, dynamic>?;
+
+      // First load languages and currencies from sales channel
       var availableLanguages = salesChannel?['languages'] as List? ?? [];
       var availableCurrencies = salesChannel?['currencies'] as List? ?? [];
 
-      // Eğer sales channel'da yoksa API'den al
+      // If not available in sales channel, get from API
       if (availableLanguages.isEmpty) {
         try {
           availableLanguages = await _api.getAvailableLanguages();
@@ -332,54 +320,54 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Context'i güncelle (dil veya kur değişikliği)
+  // Update context (language or currency change)
   Future<void> _updateContext({String? languageId, String? currencyId}) async {
     try {
-      // Context'i güncelle
+      // Update context
       await _api.updateContext(
         languageId: languageId,
         currencyId: currencyId,
       );
-      
-      // Token'ın kaydedildiğinden emin olmak için kısa bir bekleme
-      // SharedPreferences'ın commit edilmesi için
+
+      // Wait for token to be saved
+      // Wait for SharedPreferences to commit
       await Future.delayed(const Duration(milliseconds: 200));
-      
-      // Cache'leri temizle - dil değişikliğinden sonra içeriklerin yeniden yüklenmesi için
+
+      // Clear caches - to reload content after language change
       try {
-        // Image cache'i temizle
+        // Clear image cache
         imageCache.clear();
         imageCache.clearLiveImages();
       } catch (e) {
         // Silent fail on image cache clear error
       }
-      
-      // Layout widget'ını sıfırla - yeni dilde yeniden yüklenecek
+
+      // Layout widget'ını reset - to be loaded again in new language
       if (mounted) {
         setState(() {
           _layoutWidget = null;
           _isLoading = true;
         });
       }
-      
-      // Yeni context'i doğrulamak için context'i tekrar al
-      // Bu, yeni context token'ın API çağrılarında kullanılmasını sağlar
-      // Ayrıca yeni dil bilgisinin context'te olduğunu doğrular
+
+      // Verify new context by reloading context
+      // This ensures that new context token is used in API calls
+      // Also verifies that new language information is in the context
       final newContext = await _api.getSalesChannelContext();
       final newLanguage = newContext['language'] as Map<String, dynamic>?;
-      
-      // Yeni dil bilgisini state'e kaydet
+
+      // Save new language information to state
       if (mounted && newLanguage != null) {
         final salesChannelInfo = SalesChannelInfo.fromContext(newContext);
         setState(() {
           _salesChannelInfo = salesChannelInfo;
         });
       }
-      
-      // Context güncellendi, sayfayı yeniden yükle
+
+      // Context updated, reload page
       await _loadHomeLayout();
-      
-      if (mounted) {
+
+      if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Language/Currency updated'),
@@ -388,7 +376,7 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Update error: $e'),
@@ -399,18 +387,18 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Logo URL'ini al ve normalize et (hem AppBar hem DrawerHeader için kullanılabilir)
+  // Get logo URL and normalize it (can be used for AppBar and DrawerHeader)
   String? _getLogoUrl() {
     // First check logo URL from AppConfig, then state variable, then salesChannelInfo
-    String? logoUrl = AppConfigCore.AppConfig.logoUrl ??
-        _appLogoUrl ??
-        _salesChannelInfo?.logoUrl;
+    String? logoUrl =
+        AppConfig.logoUrl ?? _appLogoUrl ?? _salesChannelInfo?.logoUrl;
 
     // Logo URL priority: AppConfig > App Logo URL > Sales Channel Info
 
     // If logoUrl is relative, make it absolute by combining with base URL
     if (logoUrl != null && logoUrl.isNotEmpty) {
-      if (logoUrl.startsWith('/') || (!logoUrl.startsWith('http://') && !logoUrl.startsWith('https://'))) {
+      if (logoUrl.startsWith('/') ||
+          (!logoUrl.startsWith('http://') && !logoUrl.startsWith('https://'))) {
         // Relative URL - combine with base URL
         String baseUrl = AppConfig.baseUrl;
         if (baseUrl.endsWith('/store-api')) {
@@ -465,7 +453,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Logo - tüm kaynaklardan al (AppConfig > App Logo URL > Sales Channel Info)
+                  // Logo - get from all sources (AppConfig > App Logo URL > Sales Channel Info)
                   Builder(
                     builder: (context) {
                       final logoUrl = _getLogoUrl();
@@ -476,7 +464,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 width: 50,
                                 height: 50,
                                 fit: BoxFit.contain,
-                                loadingBuilder: (context, child, loadingProgress) {
+                                loadingBuilder:
+                                    (context, child, loadingProgress) {
                                   if (loadingProgress == null) return child;
                                   return const SizedBox(
                                     width: 50,
@@ -501,7 +490,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 fit: BoxFit.contain,
                                 memCacheWidth: 100,
                                 memCacheHeight: 100,
-                                fadeInDuration: const Duration(milliseconds: 200),
+                                fadeInDuration:
+                                    const Duration(milliseconds: 200),
                                 placeholder: (context, url) => const SizedBox(
                                   width: 50,
                                   height: 50,
@@ -538,11 +528,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.language, size: 14, color: Colors.white70),
+                            const Icon(Icons.language,
+                                size: 14, color: Colors.white70),
                             const SizedBox(width: 4),
                             Expanded(
                               child: DropdownButton<String>(
-                                value: _salesChannelInfo?.languageId?.toString(),
+                                value:
+                                    _salesChannelInfo?.languageId?.toString(),
                                 isExpanded: true,
                                 underline: const SizedBox(),
                                 dropdownColor: _primaryColor,
@@ -550,23 +542,31 @@ class _HomeScreenState extends State<HomeScreen> {
                                   fontSize: 11,
                                   color: Colors.white,
                                 ),
-                                icon: const Icon(Icons.arrow_drop_down, color: Colors.white70, size: 18),
+                                icon: const Icon(Icons.arrow_drop_down,
+                                    color: Colors.white70, size: 18),
                                 items: _availableLanguages.isEmpty
                                     ? []
                                     : _availableLanguages.map((lang) {
-                                  final id = lang['id']?.toString();
-                                  final name = lang['name']?.toString() ?? lang['translated']?['name']?.toString() ?? 'Unknown';
-                                  return DropdownMenuItem<String>(
-                                    value: id,
-                                    child: Text(
-                                      name,
-                                      style: const TextStyle(color: Colors.white, fontSize: 11),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  );
-                                }).toList(),
+                                        final id = lang['id']?.toString();
+                                        final name = lang['name']?.toString() ??
+                                            lang['translated']?['name']
+                                                ?.toString() ??
+                                            'Unknown';
+                                        return DropdownMenuItem<String>(
+                                          value: id,
+                                          child: Text(
+                                            name,
+                                            style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 11),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        );
+                                      }).toList(),
                                 onChanged: (String? newLanguageId) {
-                                  if (newLanguageId != null && newLanguageId != _salesChannelInfo?.languageId) {
+                                  if (newLanguageId != null &&
+                                      newLanguageId !=
+                                          _salesChannelInfo?.languageId) {
                                     _updateContext(languageId: newLanguageId);
                                   }
                                 },
@@ -580,8 +580,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                       )
                                     : Text(
-                                        _salesChannelInfo?.languageName ?? 'Language',
-                                        style: const TextStyle(color: Colors.white70, fontSize: 11),
+                                        _salesChannelInfo?.languageName ??
+                                            'Language',
+                                        style: const TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 11),
                                         overflow: TextOverflow.ellipsis,
                                       ),
                               ),
@@ -598,7 +601,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             Builder(
                               builder: (context) {
                                 // Get current currency ISO code to show appropriate icon
-                                final currentCurrencyIso = _salesChannelInfo?.currencyIsoCode?.toUpperCase();
+                                final currentCurrencyIso = _salesChannelInfo
+                                    ?.currencyIsoCode
+                                    ?.toUpperCase();
                                 IconData currencyIcon;
                                 if (currentCurrencyIso == 'EUR') {
                                   currencyIcon = Icons.euro;
@@ -611,7 +616,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 } else {
                                   currencyIcon = Icons.attach_money;
                                 }
-                                return Icon(currencyIcon, size: 14, color: Colors.white70);
+                                return Icon(currencyIcon,
+                                    size: 14, color: Colors.white70);
                               },
                             ),
                             const SizedBox(width: 4),
@@ -619,33 +625,48 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: Builder(
                                 builder: (context) {
                                   // Get current currency ID as string
-                                  final currentCurrencyId = _salesChannelInfo?.currencyId?.toString();
-                                  
+                                  final currentCurrencyId =
+                                      _salesChannelInfo?.currencyId?.toString();
+
                                   // Build currency items
-                                  final currencyItems = _availableCurrencies.isEmpty
+                                  final currencyItems = _availableCurrencies
+                                          .isEmpty
                                       ? <DropdownMenuItem<String>>[]
                                       : _availableCurrencies.where((currency) {
                                           final id = currency['id']?.toString();
                                           return id != null && id.isNotEmpty;
                                         }).map((currency) {
-                                    final id = currency['id']?.toString() ?? '';
-                                    final isoCode = currency['isoCode']?.toString() ?? '';
-                                    final name = currency['name']?.toString() ?? currency['translated']?['name']?.toString() ?? isoCode;
-                                    return DropdownMenuItem<String>(
-                                      value: id,
-                                      child: Text(
-                                        '$isoCode - $name',
-                                        style: const TextStyle(color: Colors.white, fontSize: 11),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    );
-                                  }).toList();
-                                  
+                                          final id =
+                                              currency['id']?.toString() ?? '';
+                                          final isoCode =
+                                              currency['isoCode']?.toString() ??
+                                                  '';
+                                          final name = currency['name']
+                                                  ?.toString() ??
+                                              currency['translated']?['name']
+                                                  ?.toString() ??
+                                              isoCode;
+                                          return DropdownMenuItem<String>(
+                                            value: id,
+                                            child: Text(
+                                              '$isoCode - $name',
+                                              style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 11),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          );
+                                        }).toList();
+
                                   // Check if current currency ID exists in items
-                                  final currencyIdExists = currencyItems.any((item) => item.value == currentCurrencyId);
-                                  
+                                  final currencyIdExists = currencyItems.any(
+                                      (item) =>
+                                          item.value == currentCurrencyId);
+
                                   return DropdownButton<String>(
-                                    value: currencyIdExists ? currentCurrencyId : null,
+                                    value: currencyIdExists
+                                        ? currentCurrencyId
+                                        : null,
                                     isExpanded: true,
                                     underline: const SizedBox(),
                                     dropdownColor: _primaryColor,
@@ -653,13 +674,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                       fontSize: 11,
                                       color: Colors.white,
                                     ),
-                                    icon: const Icon(Icons.arrow_drop_down, color: Colors.white70, size: 18),
+                                    icon: const Icon(Icons.arrow_drop_down,
+                                        color: Colors.white70, size: 18),
                                     items: currencyItems,
                                     onChanged: (String? newCurrencyId) {
-                                      if (newCurrencyId != null && newCurrencyId.isNotEmpty) {
-                                        final currentCurrencyId = _salesChannelInfo?.currencyId?.toString();
-                                        if (newCurrencyId != currentCurrencyId) {
-                                          _updateContext(currencyId: newCurrencyId);
+                                      if (newCurrencyId != null &&
+                                          newCurrencyId.isNotEmpty) {
+                                        final currentCurrencyId =
+                                            _salesChannelInfo?.currencyId
+                                                ?.toString();
+                                        if (newCurrencyId !=
+                                            currentCurrencyId) {
+                                          _updateContext(
+                                              currencyId: newCurrencyId);
                                         }
                                       }
                                     },
@@ -673,8 +700,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                             ),
                                           )
                                         : Text(
-                                            _salesChannelInfo?.currencyIsoCode ?? 'Currency',
-                                            style: const TextStyle(color: Colors.white70, fontSize: 11),
+                                            _salesChannelInfo
+                                                    ?.currencyIsoCode ??
+                                                'Currency',
+                                            style: const TextStyle(
+                                                color: Colors.white70,
+                                                fontSize: 11),
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                   );
@@ -758,12 +789,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       final String id;
 
                       if (cat is Category) {
-                        // Category objesi - name artık translated.name'den geliyor
+                        // Category object - name is now coming from translated.name
                         name =
                             cat.name.isNotEmpty ? cat.name : 'Unnamed Category';
                         id = cat.id;
                       } else if (cat is Map) {
-                        // Map formatında gelirse - translated.name kontrol et
+                        // If map is received, check translated.name
                         final mapCat = cat as Map<String, dynamic>;
                         if (mapCat['name'] != null &&
                             mapCat['name'].toString().isNotEmpty) {
@@ -808,12 +839,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
             ),
-            FutureBuilder<String?>(
-              future: TokenStorage.instance.loadContextToken(),
+            FutureBuilder<bool>(
+              future: _checkIfLoggedIn(),
               builder: (context, snapshot) {
-                final hasToken =
-                    (snapshot.data != null && snapshot.data!.isNotEmpty);
-                if (hasToken) {
+                final isLoggedIn = snapshot.data ?? false;
+                if (isLoggedIn) {
                   return ListTile(
                     leading: const Icon(Icons.logout),
                     title: const Text('Logout'),
@@ -821,12 +851,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       Navigator.of(context).pop();
                       try {
                         await AuthRepository().logout();
-                        if (mounted) {
+                        if (mounted && context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Logged out')));
                         }
                       } catch (e) {
-                        if (mounted) {
+                        if (mounted && context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text('Error: $e')));
                         }
@@ -849,7 +879,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       title: const Text('Register'),
                       onTap: () async {
                         Navigator.of(context).pop();
-                        // Shopware storefront register sayfasını browser'da aç
+                        // Open Shopware storefront register page in browser
                         final baseUrl = AppConfig.baseUrl.endsWith('/')
                             ? AppConfig.baseUrl
                             : '${AppConfig.baseUrl}/';

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/services/shopware_api.dart';
-import '../core/config.dart';
+import '../core/config/app_config.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -24,7 +24,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    // Başlangıçta AppConfig'den primary color'ı al (main()'de yüklenmiş olacak)
+    // Start default color
     _primaryColor = _hexToColor(AppConfig.primaryColorHex);
     _loadPrimaryColor();
     _loadContext();
@@ -33,14 +33,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _loadPrimaryColor() async {
     try {
       final config = await _api.getFlutterConfig();
-      final primaryColorStr = config['primaryColor'] as String? ?? AppConfig.primaryColorHex;
+      final primaryColorStr =
+          config['primaryColor'] as String? ?? AppConfig.primaryColorHex;
       if (mounted) {
         setState(() {
           _primaryColor = _hexToColor(primaryColorStr);
         });
       }
     } catch (e) {
-      // Hata durumunda AppConfig'deki değeri kullan
+      // Use default color if error occurs
       if (mounted) {
         setState(() {
           _primaryColor = _hexToColor(AppConfig.primaryColorHex);
@@ -198,8 +199,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const SizedBox(height: 12),
                     ..._availableCurrencies.map((currency) {
                       final currencyId = currency['id']?.toString() ?? '';
-                      final currencyName = currency['name']?.toString() ?? currencyId;
-                      final currencyIsoCode = currency['isoCode']?.toString() ?? '';
+                      final currencyName =
+                          currency['name']?.toString() ?? currencyId;
+                      final currencyIsoCode =
+                          currency['isoCode']?.toString() ?? '';
                       final displayName = currencyIsoCode.isNotEmpty
                           ? '$currencyName ($currencyIsoCode)'
                           : currencyName;
@@ -231,7 +234,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             width: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : const Text('Save Settings'),
@@ -242,4 +246,3 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 }
-

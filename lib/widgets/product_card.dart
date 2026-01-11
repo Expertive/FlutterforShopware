@@ -247,11 +247,11 @@ class ProductCard extends StatelessWidget {
     );
   }
 
-  /// Stok durumuna göre renk döndürür
-  /// 0'dan aşağı ise kırmızı, 1 ise sarı, 1'den yüksek ise yeşil
+  /// Return color based on stock status
+  /// If less than 0, return red, if 1, return yellow, if greater than 1, return green
   Color _getStockColor(int? availableStock) {
     if (availableStock == null) {
-      // Stok bilgisi yoksa yeşil (mevcut davranış)
+      // If stock information is not available, return green (current behavior)
       return Colors.green;
     }
 
