@@ -458,59 +458,67 @@ class _HomeScreenState extends State<HomeScreen> {
                     builder: (context) {
                       final logoUrl = _getLogoUrl();
                       if (logoUrl != null && logoUrl.isNotEmpty) {
-                        return kIsWeb
-                            ? Image.network(
-                                logoUrl,
-                                width: 50,
-                                height: 50,
-                                fit: BoxFit.contain,
-                                loadingBuilder:
-                                    (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return const SizedBox(
-                                    width: 50,
-                                    height: 50,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
+                        return LayoutBuilder(
+                          builder: (context, constraints) {
+                            // DrawerHeader'ın mevcut genişliğine göre maksimum boyutlar
+                            final maxWidth = constraints.maxWidth * 0.8;
+                            final maxHeight = 80.0;
+                            
+                            return kIsWeb
+                                ? SizedBox(
+                                    width: maxWidth,
+                                    height: maxHeight,
+                                    child: Image.network(
+                                      logoUrl,
+                                      fit: BoxFit.contain,
+                                      loadingBuilder:
+                                          (context, child, loadingProgress) {
+                                        if (loadingProgress == null) return child;
+                                        return const Center(
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        );
+                                      },
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return const Icon(
+                                          Icons.store,
+                                          size: 40,
+                                          color: Colors.white,
+                                        );
+                                      },
+                                    ),
+                                  )
+                                : SizedBox(
+                                    width: maxWidth,
+                                    height: maxHeight,
+                                    child: CachedNetworkImage(
+                                      imageUrl: logoUrl,
+                                      fit: BoxFit.contain,
+                                      memCacheWidth: 200,
+                                      fadeInDuration:
+                                          const Duration(milliseconds: 200),
+                                      placeholder: (context, url) => const Center(
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      errorWidget: (context, url, error) {
+                                        return const Icon(
+                                          Icons.store,
+                                          size: 40,
+                                          color: Colors.white,
+                                        );
+                                      },
+                                      httpHeaders: const {
+                                        'Accept': 'image/*',
+                                      },
                                     ),
                                   );
-                                },
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const Icon(
-                                    Icons.store,
-                                    size: 40,
-                                    color: Colors.white,
-                                  );
-                                },
-                              )
-                            : CachedNetworkImage(
-                                imageUrl: logoUrl,
-                                width: 80,
-                                fit: BoxFit.contain,
-                                memCacheWidth: 100,
-                                memCacheHeight: 100,
-                                fadeInDuration:
-                                    const Duration(milliseconds: 200),
-                                placeholder: (context, url) => const SizedBox(
-                                  width: 50,
-                                  height: 50,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                errorWidget: (context, url, error) {
-                                  return const Icon(
-                                    Icons.store,
-                                    size: 40,
-                                    color: Colors.white,
-                                  );
-                                },
-                                httpHeaders: const {
-                                  'Accept': 'image/*',
-                                },
-                              );
+                          },
+                        );
                       }
                       return const Icon(
                         Icons.store,
@@ -725,10 +733,19 @@ class _HomeScreenState extends State<HomeScreen> {
               title: const Text('Home'),
               onTap: () => Navigator.of(context).pop(),
             ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Text('Categories',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+            InkWell(
+              onTap: () {
+                setState(() {
+                  _drawerParentCategoryId = null;
+                  _drawerBreadcrumb.clear();
+                  _drawerCurrentCategoryName = null;
+                });
+              },
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Text('Categories',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
             ),
             if (hasCurrent) ...[
               ListTile(
@@ -740,26 +757,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   final id = _drawerParentCategoryId!;
                   Navigator.of(context).pop();
                   context.go('/category/$id');
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.arrow_upward),
-                title: const Text('Parent Category'),
-                onTap: () {
-                  if (_drawerBreadcrumb.isNotEmpty) {
-                    setState(() {
-                      _drawerBreadcrumb.removeLast();
-                      _drawerParentCategoryId = _drawerBreadcrumb.isEmpty
-                          ? null
-                          : _drawerBreadcrumb.last;
-                      _drawerCurrentCategoryName = null; // reset name on up
-                    });
-                  } else {
-                    setState(() {
-                      _drawerParentCategoryId = null;
-                      _drawerCurrentCategoryName = null;
-                    });
-                  }
                 },
               ),
             ],
