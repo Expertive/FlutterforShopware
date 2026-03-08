@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/painting.dart' show imageCache;
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -231,20 +232,31 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: _buildAppBarTitle(),
-        backgroundColor: _primaryColor,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-              icon: const Icon(Icons.search),
-              onPressed: () => context.go('/search')),
-        ],
+    // Status bar (saat/kamera bölgesi) rengini kontrol et
+    final systemUiStyle = SystemUiOverlayStyle(
+      statusBarColor: _primaryColor, // Android
+      statusBarBrightness: Brightness.dark, // iOS arka plan koyu kabul etsin
+      statusBarIconBrightness: Brightness.light, // ikonlar/battery beyaz
+    );
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: systemUiStyle,
+      child: Scaffold(
+        // Here we set the background color of the app bar to the primary color
+        appBar: AppBar(
+          title: _buildAppBarTitle(),
+          backgroundColor: _primaryColor,
+          foregroundColor: Colors.white,
+          actions: [
+            IconButton(
+                icon: const Icon(Icons.search),
+                onPressed: () => context.go('/search')),
+          ],
+        ),
+        drawer: _buildDrawer(context),
+        body: _buildBody(),
+        bottomNavigationBar: _buildBottomNavigationBar(),
       ),
-      drawer: _buildDrawer(context),
-      body: _buildBody(),
-      bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
@@ -439,6 +451,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final hasCurrent =
         _drawerParentCategoryId != null && _drawerParentCategoryId!.isNotEmpty;
     return Drawer(
+      // Drawer açıldığında görünen panelin arka planı (status bar altı dahil)
+      // primary color olsun
+      backgroundColor: _primaryColor,
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -527,82 +542,99 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                     },
                   ),
-                  const SizedBox(height: 6),
+                  const Divider(
+                    color: Colors.white24,
+                    thickness: 1,
+                    height: 20, // Ekstra dikey boşluk eklemeden ince çizgi
+                  ),
+                  const SizedBox(height: 4), // Divider'dan sonra biraz aşağı kaydır
                   // Language and Currency selection side by side
-                  Row(
-                    children: [
-                      // Language selection
-                      Expanded(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.language,
-                                size: 14, color: Colors.white70),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: DropdownButton<String>(
-                                value:
-                                    _salesChannelInfo?.languageId?.toString(),
-                                isExpanded: true,
-                                underline: const SizedBox(),
-                                dropdownColor: _primaryColor,
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.white,
-                                ),
-                                icon: const Icon(Icons.arrow_drop_down,
-                                    color: Colors.white70, size: 18),
-                                items: _availableLanguages.isEmpty
-                                    ? []
-                                    : _availableLanguages.map((lang) {
-                                        final id = lang['id']?.toString();
-                                        final name = lang['name']?.toString() ??
-                                            lang['translated']?['name']
-                                                ?.toString() ??
-                                            'Unknown';
-                                        return DropdownMenuItem<String>(
-                                          value: id,
-                                          child: Text(
-                                            name,
-                                            style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 11),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        );
-                                      }).toList(),
-                                onChanged: (String? newLanguageId) {
-                                  if (newLanguageId != null &&
-                                      newLanguageId !=
-                                          _salesChannelInfo?.languageId) {
-                                    _updateContext(languageId: newLanguageId);
-                                  }
-                                },
-                                hint: _loadingLanguagesCurrencies
-                                    ? const SizedBox(
-                                        width: 10,
-                                        height: 10,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 1.5,
-                                          color: Colors.white70,
-                                        ),
-                                      )
-                                    : Text(
-                                        _salesChannelInfo?.languageName ??
-                                            'Language',
-                                        style: const TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: 11),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
+                  SizedBox(
+                    height: 15, // Satırın toplam yüksekliğini sınırla
+                    child: Row(
+                      children: [
+                        // Language selection
+                        Expanded(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.language,
+                                size: 14,
+                                color: Colors.white70,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 1),
+                              Expanded(
+                                child: DropdownButton<String>(
+                                  value:
+                                      _salesChannelInfo?.languageId?.toString(),
+                                  isExpanded: true,
+                                  isDense: true, // Yüksekliği azalt
+                                  underline: const SizedBox(),
+                                  dropdownColor: _primaryColor,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.white,
+                                  ),
+                                  icon: const Icon(
+                                    Icons.arrow_drop_down,
+                                    color: Colors.white70,
+                                    size: 16,
+                                  ),
+                                  items: _availableLanguages.isEmpty
+                                      ? []
+                                      : _availableLanguages.map((lang) {
+                                          final id = lang['id']?.toString();
+                                          final name =
+                                              lang['name']?.toString() ??
+                                                  lang['translated']?['name']
+                                                      ?.toString() ??
+                                                  'Unknown';
+                                          return DropdownMenuItem<String>(
+                                            value: id,
+                                            child: Text(
+                                              name,
+                                              style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 14),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          );
+                                        }).toList(),
+                                  onChanged: (String? newLanguageId) {
+                                    if (newLanguageId != null &&
+                                        newLanguageId !=
+                                            _salesChannelInfo?.languageId) {
+                                      _updateContext(
+                                          languageId: newLanguageId);
+                                    }
+                                  },
+                                  hint: _loadingLanguagesCurrencies
+                                      ? const SizedBox(
+                                          width: 10,
+                                          height: 10,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 1.5,
+                                            color: Colors.white70,
+                                          ),
+                                        )
+                                      : Text(
+                                          _salesChannelInfo?.languageName ??
+                                              'Language',
+                                          style: const TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 11,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      // Currency selection
-                      Expanded(
+                        const SizedBox(width: 8),
+                        // Currency selection
+                        Expanded(
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -660,7 +692,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                               '$isoCode - $name',
                                               style: const TextStyle(
                                                   color: Colors.white,
-                                                  fontSize: 11),
+                                                  fontSize: 14),
                                               overflow: TextOverflow.ellipsis,
                                             ),
                                           );
@@ -725,30 +757,41 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ],
                   ),
+                  ),
                 ],
               ),
             ),
-            ListTile(
-              leading: const Icon(Icons.home),
-              title: const Text('Home'),
-              onTap: () => Navigator.of(context).pop(),
-            ),
-            InkWell(
-              onTap: () {
-                setState(() {
-                  _drawerParentCategoryId = null;
-                  _drawerBreadcrumb.clear();
-                  _drawerCurrentCategoryName = null;
-                });
-              },
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: Text('Categories',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
+            // Header altındaki Home ve Categories satırlarını beyaz zemin üzerinde göster
+            Container(
+              color: Colors.white,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.home),
+                    title: const Text('Home'),
+                    onTap: () => Navigator.of(context).pop(),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.category),
+                    title: const Text(
+                      'Categories',
+                      style: TextStyle(color: Colors.black),
+                    ),
+                    onTap: () {
+                      setState(() {
+                        _drawerParentCategoryId = null;
+                        _drawerBreadcrumb.clear();
+                        _drawerCurrentCategoryName = null;
+                      });
+                    },
+                  ),
+                ],
               ),
             ),
             if (hasCurrent) ...[
               ListTile(
+                tileColor: Colors.white,
                 leading: const Icon(Icons.shopping_bag_outlined),
                 // Use category name if known, otherwise fallback text
                 title: Text(_drawerCurrentCategoryName ??
@@ -761,84 +804,98 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
             Expanded(
+              
               child: FutureBuilder<List<dynamic>>(
+              
                 future: _getCategoriesForDrawer(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: LinearProgressIndicator(),
+                    return Container(
+                      color: Colors.white,
+                      child: const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: LinearProgressIndicator(),
+                      ),
                     );
                   }
                   if (snapshot.hasError) {
                     // Error loading categories
-                    return const Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Text('Categories not available'),
+                    return Container(
+                      color: Colors.white,
+                      child: const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Text('Categories not available'),
+                      ),
                     );
                   }
                   final elements = snapshot.data ?? [];
                   if (elements.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Text('Category not found'),
+                    return Container(
+                      color: Colors.white,
+                      child: const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Text('Category not found'),
+                      ),
                     );
                   }
-                  return ListView.builder(
-                    itemCount: elements.length,
-                    itemBuilder: (context, index) {
-                      final cat = elements[index];
-                      // Category object or map
-                      final String name;
-                      final String id;
+                  return Container(
+                    color: Colors.white, // Kategoriler listesi arka planı beyaz
+                    child: ListView.builder(
+                      itemCount: elements.length,
+                      itemBuilder: (context, index) {
+                        final cat = elements[index];
+                        // Category object or map
+                        final String name;
+                        final String id;
 
-                      if (cat is Category) {
-                        // Category object - name is now coming from translated.name
-                        name =
-                            cat.name.isNotEmpty ? cat.name : 'Unnamed Category';
-                        id = cat.id;
-                      } else if (cat is Map) {
-                        // If map is received, check translated.name
-                        final mapCat = cat as Map<String, dynamic>;
-                        if (mapCat['name'] != null &&
-                            mapCat['name'].toString().isNotEmpty) {
-                          name = mapCat['name'].toString();
-                        } else if (mapCat['translated'] != null &&
-                            mapCat['translated'] is Map) {
-                          final translated =
-                              mapCat['translated'] as Map<String, dynamic>;
-                          name = translated['name']?.toString() ??
-                              'Unnamed Category';
+                        if (cat is Category) {
+                          // Category object - name is now coming from translated.name
+                          name =
+                              cat.name.isNotEmpty ? cat.name : 'Unnamed Category';
+                          id = cat.id;
+                        } else if (cat is Map) {
+                          // If map is received, check translated.name
+                          final mapCat = cat as Map<String, dynamic>;
+                          if (mapCat['name'] != null &&
+                              mapCat['name'].toString().isNotEmpty) {
+                            name = mapCat['name'].toString();
+                          } else if (mapCat['translated'] != null &&
+                              mapCat['translated'] is Map) {
+                            final translated =
+                                mapCat['translated'] as Map<String, dynamic>;
+                            name = translated['name']?.toString() ??
+                                'Unnamed Category';
+                          } else {
+                            name = 'Unnamed Category';
+                          }
+                          id = (mapCat['id']?.toString() ?? '');
                         } else {
-                          name = 'Unnamed Category';
+                          name = 'Unknown Category';
+                          id = '';
                         }
-                        id = (mapCat['id']?.toString() ?? '');
-                      } else {
-                        name = 'Unknown Category';
-                        id = '';
-                      }
 
-                      return ListTile(
-                        dense: true,
-                        title: Text(name),
-                        onTap: () {
-                          // drill-down to children and store current name
-                          setState(() {
-                            _drawerBreadcrumb.add(id);
-                            _drawerParentCategoryId = id;
-                            _drawerCurrentCategoryName = name;
-                          });
-                        },
-                        trailing: IconButton(
-                          icon: const Icon(Icons.chevron_right),
-                          tooltip: 'Show products',
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                            context.go('/category/$id');
+                        return ListTile(
+                          dense: true,
+                          title: Text(name),
+                          onTap: () {
+                            // drill-down to children and store current name
+                            setState(() {
+                              _drawerBreadcrumb.add(id);
+                              _drawerParentCategoryId = id;
+                              _drawerCurrentCategoryName = name;
+                            });
                           },
-                        ),
-                      );
-                    },
+                          trailing: IconButton(
+                            icon: const Icon(Icons.chevron_right),
+                            tooltip: 'Show products',
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              context.go('/category/$id');
+                            },
+                          ),
+                        );
+                      },
+                    ),
                   );
                 },
               ),

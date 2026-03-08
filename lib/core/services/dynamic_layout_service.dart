@@ -918,10 +918,13 @@ class DynamicLayoutService {
       }
     }
 
-    // If product stream exists, fetch products asynchronously
+    // If product stream exists, fetch products asynchronously and enrich with images
     if (streamId != null && streamId.isNotEmpty) {
-      return FutureBuilder<List<Map<String, dynamic>>>(
-        future: _api.getProductsFromStream(streamId, limit: 20),
+      return FutureBuilder<List<Product>>(
+        future: _getProductsWithDetailsFromStream(
+          streamId,
+          limit: 20,
+        ),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return SizedBox(
@@ -934,14 +937,18 @@ class DynamicLayoutService {
             return const SizedBox.shrink();
           }
 
-          final streamProducts = snapshot.data ?? [];
+          final detailedProducts = snapshot.data ?? [];
 
-          if (streamProducts.isEmpty) {
+          if (detailedProducts.isEmpty) {
             return const SizedBox.shrink();
           }
 
+          // ProductSlider şu an Map listesi beklediği için, Product'ları toJson ile geri Map'e çeviriyoruz.
+          final productsWithImages =
+              detailedProducts.map((p) => p.toJson()).toList();
+
           return ProductSlider(
-            products: streamProducts,
+            products: productsWithImages,
             height: sliderData['height']?.toDouble() ?? 280,
           );
         },
@@ -957,6 +964,70 @@ class DynamicLayoutService {
       products: products,
       height: sliderData['height']?.toDouble() ?? 280,
     );
+  }
+
+  /// Product stream'den gelen basit ürün listesi için,
+  /// her ürünün detayını `/store-api/product/{id}` ile çekip
+  /// imageUrl gibi alanları doldurur.
+  Future<List<Product>> _getProductsWithDetailsFromStream(
+    String streamId, {
+    int limit = 20,
+  }) async {
+    try {
+      final streamProducts =
+          await _api.getProductsFromStream(streamId, limit: limit);
+
+      if (streamProducts.isEmpty) {
+        return [];
+      }
+
+      final futures = streamProducts.map((p) async {
+        final id = p['id']?.toString();
+        if (id == null || id.isEmpty) {
+          return null;
+        }
+        try {
+          return await _api.getProduct(id);
+        } catch (_) {
+          return null;
+        }
+      }).toList();
+
+      final results = await Future.wait(futures);
+      return results.whereType<Product>().toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// Statik ürün listesi (slotData['products']) için her ürünün detayını çeker.
+  Future<List<Product>> _getProductsWithDetailsFromList(
+    List<dynamic> products, {
+    int? limit,
+  }) async {
+    try {
+      if (products.isEmpty) {
+        return [];
+      }
+
+      final futures = products.take(limit ?? products.length).map((p) async {
+        if (p is Map && p['id'] != null) {
+          final id = p['id'].toString();
+          if (id.isEmpty) return null;
+          try {
+            return await _api.getProduct(id);
+          } catch (_) {
+            return null;
+          }
+        }
+        return null;
+      }).toList();
+
+      final results = await Future.wait(futures);
+      return results.whereType<Product>().toList();
+    } catch (_) {
+      return [];
+    }
   }
 
   Widget _buildProductCard(Map<String, dynamic> cardData,
@@ -1217,27 +1288,73 @@ class DynamicLayoutService {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (title != null && title.isNotEmpty) ...[
-          Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+    // Slot içinden gelen ürünler genelde sadeleştirilmiş (imageUrl, cover vs. yok).
+    // Bu yüzden her ürünün detayını tekrar çekip (getProduct) zenginleştiriyoruz.
+    return FutureBuilder<List<Product>>(
+      future: _getProductsWithDetailsFromList(products),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox(
+            height: 280,
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Container(
+            padding: const EdgeInsets.all(16.0),
+            child: const Text(
+              'Ürünler yüklenirken bir hata oluştu',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.red,
+                fontStyle: FontStyle.italic,
               ),
             ),
-          ),
-        ],
-        ProductSlider(
-          products: products,
-          height: 280,
-        ),
-      ],
+          );
+        }
+
+        final detailedProducts = snapshot.data ?? [];
+        if (detailedProducts.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(16.0),
+            child: const Text(
+              'No products found',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          );
+        }
+
+        final productsWithImages =
+            detailedProducts.map((p) => p.toJson()).toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (title != null && title.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0, vertical: 8.0),
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+            ProductSlider(
+              products: productsWithImages,
+              height: 280,
+            ),
+          ],
+        );
+      },
     );
   }
 

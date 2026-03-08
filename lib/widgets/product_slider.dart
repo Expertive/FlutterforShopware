@@ -3,6 +3,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/models/product.dart';
+import '../core/config/app_config.dart';
+
 class ProductSlider extends StatefulWidget {
   final List<dynamic> products;
   final double height;
@@ -91,7 +94,38 @@ class _ProductSliderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imageUrl = product['imageUrl'] as String?;
+    // Product modelini kullanarak imageUrl'i, detay sayfasıyla aynı mantıkla hesapla
+    String? imageUrl = product['imageUrl'] as String?;
+
+    // 1) Önce doğrudan imageUrl alanını dene
+    if (imageUrl == null || imageUrl.isEmpty) {
+      // 2) Ürünü Product modeline parse etmeyi dene (detay sayfası ile aynı mantık)
+      try {
+        final parsedProduct = Product.fromJson(product);
+        imageUrl = parsedProduct.imageUrl;
+      } catch (_) {
+        // JSON farklı bir formattaysa sessizce geç
+      }
+    }
+
+    // 3) Hâlâ boşsa, Shopware'in bazı cevaplarında olduğu gibi cover.url'i dene
+    if (imageUrl == null || imageUrl.isEmpty) {
+      final cover = product['cover'];
+      if (cover is Map && cover['url'] is String) {
+        var url = cover['url'] as String;
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+          url = '${AppConfig.baseUrl}$url';
+        }
+        imageUrl = url;
+      }
+    }
+
+    // Debug için: slider'a gelen ürün ve resim URL'sini logla
+    // (Release'de kaldırabilirsin)
+    // ignore: avoid_print
+    print('SLIDER PRODUCT: ${product['id']} -> imageUrl: $imageUrl');
+    // ignore: avoid_print
+    print('SLIDER PRODUCT RAW JSON: $product');
     final name = product['name'] as String? ?? 'Product';
     final price = product['price'] as Map<String, dynamic>?;
     final gross = price?['gross'] ?? 0.0;
