@@ -226,4 +226,4 @@ MIT License
 
 ## Contact
 
-For questions: info@expertive.com
+For questions: info@expertive.de
