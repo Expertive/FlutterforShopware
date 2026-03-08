@@ -122,6 +122,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           onPressed: () => _handleBack(context),
         ),
         title: const Text('Register New Account'),
+        centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
         actions: [

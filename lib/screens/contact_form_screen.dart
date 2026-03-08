@@ -126,6 +126,7 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
           onPressed: () => context.pop(),
         ),
         title: const Text('Contact'),
+        centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
       ),

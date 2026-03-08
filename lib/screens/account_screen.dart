@@ -127,6 +127,7 @@ class _AccountScreenState extends State<AccountScreen> {
           onPressed: () => _handleBack(context),
         ),
         title: const Text('My Account'),
+        centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
         actions: [

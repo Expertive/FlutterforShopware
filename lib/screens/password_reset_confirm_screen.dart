@@ -120,6 +120,7 @@ class _PasswordResetConfirmScreenState
           onPressed: () => context.pop(),
         ),
         title: const Text('Set New Password'),
+        centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
       ),

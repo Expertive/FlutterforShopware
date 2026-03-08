@@ -97,6 +97,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
           onPressed: () => _handleBack(context),
         ),
         title: const Text('Product Reviews'),
+        centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
       ),

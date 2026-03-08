@@ -890,7 +890,6 @@ class DynamicLayoutService {
   }
 
   Widget _buildFlutterProductSlider(Map<String, dynamic> sliderData) {
-    // Check products field - different formats possible
     List<dynamic> products = [];
     String? streamId;
 
@@ -948,7 +947,7 @@ class DynamicLayoutService {
               detailedProducts.map((p) => p.toJson()).toList();
 
           return ProductSlider(
-            products: productsWithImages,
+            products: streamProducts,
             height: sliderData['height']?.toDouble() ?? 280,
           );
         },
@@ -962,6 +961,7 @@ class DynamicLayoutService {
 
     return ProductSlider(
       products: products,
+      title: sliderData['title'] as String?,
       height: sliderData['height']?.toDouble() ?? 280,
     );
   }
@@ -1288,73 +1288,27 @@ class DynamicLayoutService {
       );
     }
 
-    // Slot içinden gelen ürünler genelde sadeleştirilmiş (imageUrl, cover vs. yok).
-    // Bu yüzden her ürünün detayını tekrar çekip (getProduct) zenginleştiriyoruz.
-    return FutureBuilder<List<Product>>(
-      future: _getProductsWithDetailsFromList(products),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SizedBox(
-            height: 280,
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        if (snapshot.hasError) {
-          return Container(
-            padding: const EdgeInsets.all(16.0),
-            child: const Text(
-              'Ürünler yüklenirken bir hata oluştu',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.red,
-                fontStyle: FontStyle.italic,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (title != null && title.isNotEmpty) ...[
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
               ),
             ),
-          );
-        }
-
-        final detailedProducts = snapshot.data ?? [];
-        if (detailedProducts.isEmpty) {
-          return Container(
-            padding: const EdgeInsets.all(16.0),
-            child: const Text(
-              'No products found',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          );
-        }
-
-        final productsWithImages =
-            detailedProducts.map((p) => p.toJson()).toList();
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (title != null && title.isNotEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0, vertical: 8.0),
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-            ProductSlider(
-              products: productsWithImages,
-              height: 280,
-            ),
-          ],
-        );
-      },
+          ),
+        ],
+        ProductSlider(
+          products: products,
+          height: 280,
+        ),
+      ],
     );
   }
 

@@ -50,8 +50,10 @@ class Product {
       }
     }
 
-    // Strip HTML from description
-    String description = json['description'] ?? '';
+    // Strip HTML from description (check translated fallback)
+    String description = json['description'] as String?
+        ?? (json['translated'] as Map<String, dynamic>?)?['description'] as String?
+        ?? '';
     if (description.isNotEmpty) {
       // Simple HTML stripping (for production, use html package)
       description = description
@@ -68,9 +70,14 @@ class Product {
       availableStock = json['stock'] as int?;
     }
 
+    final translated = json['translated'] as Map<String, dynamic>? ?? {};
+    final name = json['name'] as String?
+        ?? translated['name'] as String?
+        ?? '';
+
     return Product(
       id: json['id'] ?? '',
-      name: json['name'] ?? '',
+      name: name,
       description: description,
       price: price,
       imageUrl: imageUrl,

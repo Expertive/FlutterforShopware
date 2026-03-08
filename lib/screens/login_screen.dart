@@ -125,6 +125,7 @@ class _LoginScreenState extends State<LoginScreen> {
           onPressed: () => _handleBack(context),
         ),
         title: const Text('Customer Login'),
+        centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
         actions: [

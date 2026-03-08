@@ -151,6 +151,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           onPressed: () => context.pop(),
         ),
         title: const Text('Language & Currency'),
+        centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
       ),

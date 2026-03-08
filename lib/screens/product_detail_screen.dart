@@ -183,7 +183,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return Scaffold(
       extendBodyBehindAppBar: false,
       appBar: AppBar(
-        title: const Text('Product Details'),
+        title: Text(
+          AppConfig.appName,
+          style: const TextStyle(fontSize: 18),
+          overflow: TextOverflow.ellipsis,
+        ),
+        centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
         leading: IconButton(

@@ -67,6 +67,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
           onPressed: () => _handleBack(context),
         ),
         title: const Text('My Addresses'),
+        centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
         actions: [

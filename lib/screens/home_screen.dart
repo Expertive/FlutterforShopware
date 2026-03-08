@@ -232,31 +232,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Status bar (saat/kamera bölgesi) rengini kontrol et
-    final systemUiStyle = SystemUiOverlayStyle(
-      statusBarColor: _primaryColor, // Android
-      statusBarBrightness: Brightness.dark, // iOS arka plan koyu kabul etsin
-      statusBarIconBrightness: Brightness.light, // ikonlar/battery beyaz
-    );
-
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: systemUiStyle,
-      child: Scaffold(
-        // Here we set the background color of the app bar to the primary color
-        appBar: AppBar(
-          title: _buildAppBarTitle(),
-          backgroundColor: _primaryColor,
-          foregroundColor: Colors.white,
-          actions: [
-            IconButton(
-                icon: const Icon(Icons.search),
-                onPressed: () => context.go('/search')),
-          ],
-        ),
-        drawer: _buildDrawer(context),
-        body: _buildBody(),
-        bottomNavigationBar: _buildBottomNavigationBar(),
+    return Scaffold(
+      appBar: AppBar(
+        title: _buildAppBarTitle(),
+        backgroundColor: _primaryColor,
+        foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: () => context.go('/search')),
+        ],
       ),
+      drawer: _buildDrawer(context),
+      body: _buildBody(),
+      bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
@@ -972,14 +961,14 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: (index) {
         setState(() => _currentIndex = index);
         if (index == 1) {
-          context.go('/cart');
+          context.go('/search');
         } else if (index == 2) {
           context.go('/account');
         }
       },
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'Cart'),
+        BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
         BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Account'),
       ],
     );

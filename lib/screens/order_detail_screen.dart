@@ -244,6 +244,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           onPressed: () => context.pop(),
         ),
         title: const Text('Order Details'),
+        centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
         actions: [

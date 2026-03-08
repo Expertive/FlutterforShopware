@@ -9,11 +9,13 @@ import '../core/config/app_config.dart';
 class ProductSlider extends StatefulWidget {
   final List<dynamic> products;
   final double height;
+  final String? title;
 
   const ProductSlider({
     super.key,
     required this.products,
     this.height = 250,
+    this.title,
   });
 
   @override
@@ -37,7 +39,19 @@ class _ProductSliderState extends State<ProductSlider> {
     }
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (widget.title != null && widget.title!.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Text(
+              widget.title!,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
         SizedBox(
           height: widget.height,
           child: PageView.builder(
@@ -55,7 +69,10 @@ class _ProductSliderState extends State<ProductSlider> {
               final product = widget.products[index];
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: _ProductSliderCard(product: product),
+                child: _ProductSliderCard(
+                  product: product,
+                  index: index,
+                ),
               );
             },
           ),
@@ -89,57 +106,30 @@ class _ProductSliderState extends State<ProductSlider> {
 
 class _ProductSliderCard extends StatelessWidget {
   final Map<String, dynamic> product;
+  final int index;
 
-  const _ProductSliderCard({super.key, required this.product});
+  const _ProductSliderCard({
+    required this.product,
+    required this.index,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // Product modelini kullanarak imageUrl'i, detay sayfasıyla aynı mantıkla hesapla
-    String? imageUrl = product['imageUrl'] as String?;
-
-    // 1) Önce doğrudan imageUrl alanını dene
-    if (imageUrl == null || imageUrl.isEmpty) {
-      // 2) Ürünü Product modeline parse etmeyi dene (detay sayfası ile aynı mantık)
-      try {
-        final parsedProduct = Product.fromJson(product);
-        imageUrl = parsedProduct.imageUrl;
-      } catch (_) {
-        // JSON farklı bir formattaysa sessizce geç
-      }
-    }
-
-    // 3) Hâlâ boşsa, Shopware'in bazı cevaplarında olduğu gibi cover.url'i dene
-    if (imageUrl == null || imageUrl.isEmpty) {
-      final cover = product['cover'];
-      if (cover is Map && cover['url'] is String) {
-        var url = cover['url'] as String;
-        if (!url.startsWith('http://') && !url.startsWith('https://')) {
-          url = '${AppConfig.baseUrl}$url';
-        }
-        imageUrl = url;
-      }
-    }
-
-    // Debug için: slider'a gelen ürün ve resim URL'sini logla
-    // (Release'de kaldırabilirsin)
-    // ignore: avoid_print
-    print('SLIDER PRODUCT: ${product['id']} -> imageUrl: $imageUrl');
-    // ignore: avoid_print
-    print('SLIDER PRODUCT RAW JSON: $product');
+    final imageUrl = product['imageUrl'] as String?;
     final name = product['name'] as String? ?? 'Product';
     final price = product['price'] as Map<String, dynamic>?;
     final gross = price?['gross'] ?? 0.0;
 
     return InkWell(
       onTap: () {
-        final productId = product['id'];
-        if (productId != null) {
+        if (productId != 'unknown') {
           context.go('/product/$productId');
         }
       },
       borderRadius: BorderRadius.circular(16),
       child: Hero(
-        tag: 'product_slider_${product['id']}',
+        // index eklendi: aynı ürün birden fazla slider’da olsa bile Hero tag çakışmaz
+        tag: 'product_slider_${productId}_$index',
         child: Container(
           decoration: BoxDecoration(
             color: Colors.white,
