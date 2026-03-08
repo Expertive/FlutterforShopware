@@ -890,7 +890,10 @@ class DynamicLayoutService {
   }
 
   Widget _buildFlutterProductSlider(Map<String, dynamic> sliderData) {
-    // Check products field - different formats possible
+    // ignore: avoid_print
+    print('[_buildFlutterProductSlider] sliderData keys: ${sliderData.keys.toList()}');
+    // ignore: avoid_print
+    print('[_buildFlutterProductSlider] products raw: ${sliderData['products']?.runtimeType} = ${sliderData['products']}');
     List<dynamic> products = [];
     String? streamId;
 
@@ -942,6 +945,7 @@ class DynamicLayoutService {
 
           return ProductSlider(
             products: streamProducts,
+            title: sliderData['title'] as String?,
             height: sliderData['height']?.toDouble() ?? 280,
           );
         },
@@ -955,6 +959,7 @@ class DynamicLayoutService {
 
     return ProductSlider(
       products: products,
+      title: sliderData['title'] as String?,
       height: sliderData['height']?.toDouble() ?? 280,
     );
   }
@@ -1220,21 +1225,9 @@ class DynamicLayoutService {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (title != null && title.isNotEmpty) ...[
-          Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
         ProductSlider(
           products: products,
+          title: title,
           height: 280,
         ),
       ],

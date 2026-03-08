@@ -6,11 +6,13 @@ import 'package:go_router/go_router.dart';
 class ProductSlider extends StatefulWidget {
   final List<dynamic> products;
   final double height;
+  final String? title;
 
   const ProductSlider({
     super.key,
     required this.products,
     this.height = 250,
+    this.title,
   });
 
   @override
@@ -29,12 +31,28 @@ class _ProductSliderState extends State<ProductSlider> {
 
   @override
   Widget build(BuildContext context) {
+    // ignore: avoid_print
+    print('[ProductSlider] build called with ${widget.products.length} products');
     if (widget.products.isEmpty) {
+      // ignore: avoid_print
+      print('[ProductSlider] products is EMPTY - showing nothing');
       return const SizedBox.shrink();
     }
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (widget.title != null && widget.title!.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Text(
+              widget.title!,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
         SizedBox(
           height: widget.height,
           child: PageView.builder(
@@ -52,7 +70,10 @@ class _ProductSliderState extends State<ProductSlider> {
               final product = widget.products[index];
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: _ProductSliderCard(product: product),
+                child: _ProductSliderCard(
+                  product: product,
+                  index: index,
+                ),
               );
             },
           ),
@@ -86,26 +107,37 @@ class _ProductSliderState extends State<ProductSlider> {
 
 class _ProductSliderCard extends StatelessWidget {
   final Map<String, dynamic> product;
+  final int index;
 
-  const _ProductSliderCard({super.key, required this.product});
+  const _ProductSliderCard({
+    required this.product,
+    required this.index,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final productId = product['id'] ?? 'unknown';
     final imageUrl = product['imageUrl'] as String?;
     final name = product['name'] as String? ?? 'Product';
     final price = product['price'] as Map<String, dynamic>?;
     final gross = price?['gross'] ?? 0.0;
 
+    // Debug: log product and image URL to IDE console
+    // Bu satırlar sadece debug sırasında yardımcı olsun diye eklendi.
+    // İstersen daha sonra silebilirsin.
+    // ignore: avoid_print
+    print('[ProductSlider] id=$productId imageUrl=$imageUrl');
+
     return InkWell(
       onTap: () {
-        final productId = product['id'];
-        if (productId != null) {
+        if (productId != 'unknown') {
           context.go('/product/$productId');
         }
       },
       borderRadius: BorderRadius.circular(16),
       child: Hero(
-        tag: 'product_slider_${product['id']}',
+        // index eklendi: aynı ürün birden fazla slider’da olsa bile Hero tag çakışmaz
+        tag: 'product_slider_${productId}_$index',
         child: Container(
           decoration: BoxDecoration(
             color: Colors.white,
