@@ -31,11 +31,7 @@ class _ProductSliderState extends State<ProductSlider> {
 
   @override
   Widget build(BuildContext context) {
-    // ignore: avoid_print
-    print('[ProductSlider] build called with ${widget.products.length} products');
     if (widget.products.isEmpty) {
-      // ignore: avoid_print
-      print('[ProductSlider] products is EMPTY - showing nothing');
       return const SizedBox.shrink();
     }
 
@@ -121,12 +117,6 @@ class _ProductSliderCard extends StatelessWidget {
     final name = product['name'] as String? ?? 'Product';
     final price = product['price'] as Map<String, dynamic>?;
     final gross = price?['gross'] ?? 0.0;
-
-    // Debug: log product and image URL to IDE console
-    // Bu satırlar sadece debug sırasında yardımcı olsun diye eklendi.
-    // İstersen daha sonra silebilirsin.
-    // ignore: avoid_print
-    print('[ProductSlider] id=$productId imageUrl=$imageUrl');
 
     return InkWell(
       onTap: () {

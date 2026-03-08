@@ -890,10 +890,6 @@ class DynamicLayoutService {
   }
 
   Widget _buildFlutterProductSlider(Map<String, dynamic> sliderData) {
-    // ignore: avoid_print
-    print('[_buildFlutterProductSlider] sliderData keys: ${sliderData.keys.toList()}');
-    // ignore: avoid_print
-    print('[_buildFlutterProductSlider] products raw: ${sliderData['products']?.runtimeType} = ${sliderData['products']}');
     List<dynamic> products = [];
     String? streamId;
 

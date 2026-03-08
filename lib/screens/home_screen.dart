@@ -234,12 +234,13 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: _buildAppBarTitle(),
+        centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
         actions: [
           IconButton(
-              icon: const Icon(Icons.search),
-              onPressed: () => context.go('/search')),
+              icon: const Icon(Icons.shopping_cart),
+              onPressed: () => context.go('/cart')),
         ],
       ),
       drawer: _buildDrawer(context),
@@ -915,14 +916,14 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: (index) {
         setState(() => _currentIndex = index);
         if (index == 1) {
-          context.go('/cart');
+          context.go('/search');
         } else if (index == 2) {
           context.go('/account');
         }
       },
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'Cart'),
+        BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
         BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Account'),
       ],
     );

@@ -97,6 +97,7 @@ class _CartScreenState extends State<CartScreen> {
           onPressed: () => _handleBack(context),
         ),
         title: const Text('Cart'),
+        centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
         actions: [

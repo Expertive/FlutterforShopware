@@ -143,6 +143,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
           onPressed: () => _handleBack(context),
         ),
         title: const Text('My Orders'),
+        centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
         actions: [

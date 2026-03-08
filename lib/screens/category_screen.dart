@@ -128,6 +128,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
           onPressed: () => _handleBack(context),
         ),
         title: Text(_categoryName ?? 'Categories'),
+        centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
         actions: [

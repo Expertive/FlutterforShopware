@@ -119,6 +119,7 @@ class _GuestOrderLookupScreenState extends State<GuestOrderLookupScreen> {
           onPressed: () => context.pop(),
         ),
         title: const Text('Guest Order Lookup'),
+        centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
       ),

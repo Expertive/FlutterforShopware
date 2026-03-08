@@ -162,6 +162,7 @@ class _AddressEditScreenState extends State<AddressEditScreen> {
           onPressed: () => _handleBack(context),
         ),
         title: Text(editing ? 'Edit Address' : 'New Address'),
+        centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
       ),

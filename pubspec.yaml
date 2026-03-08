@@ -1,5 +1,5 @@
 name: flutter_shop_app
-description: "FlutterforShopware - Shopware 6 ile entegre Flutter mobil uygulaması"
+description: "FlutterforShopware - Shopware 6 integrated Flutter mobile app"
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -43,7 +43,7 @@ dependencies:
   
   # WebView
   webview_flutter: ^4.13.0
-  # webview_flutter_web: ^0.2.2  # iOS için gerekli değil, sadece web platformu için
+  # webview_flutter_web: ^0.2.2  # iOS for web platform
   webview_flutter_wkwebview: ^3.23.5
 
 dev_dependencies:

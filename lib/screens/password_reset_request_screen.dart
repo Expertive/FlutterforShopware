@@ -109,6 +109,7 @@ class _PasswordResetRequestScreenState
           onPressed: () => context.pop(),
         ),
         title: const Text('Password Reset'),
+        centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
       ),

@@ -67,6 +67,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
           onPressed: () => _handleBack(context),
         ),
         title: const Text('İstek Listem'),
+        centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
         actions: [
