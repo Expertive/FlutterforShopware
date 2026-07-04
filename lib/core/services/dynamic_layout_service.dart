@@ -872,7 +872,8 @@ class DynamicLayoutService {
               detailedProducts.map((p) => p.toJson()).toList();
 
           return ProductSlider(
-            products: streamProducts,
+            products: productsWithImages,
+            title: sliderData['title'] as String?,
             height: sliderData['height']?.toDouble() ?? 280,
           );
         },
