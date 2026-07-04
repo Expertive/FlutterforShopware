@@ -86,9 +86,6 @@ class _OrderListScreenState extends State<OrderListScreen> {
       final ordersData = result['orders'] as Map<String, dynamic>?;
       final elements = ordersData?['elements'] as List? ?? [];
 
-      // Debug: Print first order's structure
-      // Orders loaded successfully
-
       // paymentChangeable can be an array or a Map
       final paymentChangeableData = result['paymentChangeable'];
       if (paymentChangeableData is Map) {

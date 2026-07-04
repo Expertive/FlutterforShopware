@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:go_router/go_router.dart';
-// WebView platform interface - web platform is not required (for iOS)
-// import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
-// import 'package:webview_flutter_web/webview_flutter_web.dart';
 
 import 'screens/home_screen.dart';
 import 'screens/category_screen.dart';
@@ -30,36 +26,74 @@ import 'screens/contact_form_screen.dart';
 import 'core/services/shopware_api.dart';
 import 'core/config/app_config.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Platform-specific WebView initialization
-  // iOS/macOS platform - WebKitWebViewPlatform is automatically used
-  // Android platform uses default implementation automatically
-  // Web platform is required (currently disabled)
-  // if (kIsWeb) {
-  //   WebViewPlatform.instance = WebWebViewPlatform();
-  // }
-
-  // Hive init
   await Hive.initFlutter();
 
-  // Load config before app starts
-  // So the correct access key and primary color is used on first launch
+  final api = ShopwareApi();
+  final bootstrapped = await api.bootstrapAccessKey();
+
+  if (!bootstrapped) {
+    runApp(const BootstrapErrorApp());
+    return;
+  }
+
   try {
-    final api = ShopwareApi();
     final config = await api.getFlutterConfig();
     final primaryColorStr = config['primaryColor'] as String? ?? '#1976D2';
     AppConfig.update(newPrimaryColorHex: primaryColorStr);
-  } catch (e) {
-    // Continue even on error, fallback values will be used (default values)
+    final appName = config['appName'] as String?;
+    if (appName != null && appName.isNotEmpty) {
+      AppConfig.appName = appName;
+    }
+  } catch (_) {
+    // Continue with defaults
   }
 
   runApp(
-    ProviderScope(
+    const ProviderScope(
       child: FlutterShopApp(),
     ),
   );
+}
+
+/// Shown when bootstrap fails (missing secret, wrong channel, app disabled).
+class BootstrapErrorApp extends StatelessWidget {
+  const BootstrapErrorApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: AppConfig.appName,
+      home: Scaffold(
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.lock_outline, size: 64, color: Colors.grey[400]),
+                const SizedBox(height: 24),
+                const Text(
+                  'Unable to connect',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'The app could not authenticate with the store. '
+                  'Please verify the sales channel ID, app secret, and that '
+                  'the mobile app is enabled in Shopware admin.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 15, color: Colors.grey[700]),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class FlutterShopApp extends StatelessWidget {
@@ -77,25 +111,24 @@ class FlutterShopApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Get primary color from AppConfig (will be updated after config is loaded)
     final primaryColor = _hexToColor(AppConfig.primaryColorHex);
 
     return MaterialApp.router(
-      title: 'FlutterforShopware',
+      title: AppConfig.appName,
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
           seedColor: primaryColor,
           brightness: Brightness.light,
         ),
-        appBarTheme: AppBarTheme(
+        appBarTheme: const AppBarTheme(
           centerTitle: false,
           elevation: 0,
           scrolledUnderElevation: 1,
           backgroundColor: Colors.transparent,
           foregroundColor: Colors.black87,
           surfaceTintColor: Colors.transparent,
-          titleTextStyle: const TextStyle(
+          titleTextStyle: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w600,
             color: Colors.black87,

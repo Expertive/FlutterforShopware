@@ -136,7 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
               await _layoutService.loadLayout(homePageId, context);
           if (mounted) {
             setState(() {
-              _layoutWidget = layoutWidget ?? _buildTestLayout();
+              _layoutWidget = layoutWidget ?? _buildEmptyLayout();
               _isLoading = false;
             });
           }
@@ -145,25 +145,22 @@ class _HomeScreenState extends State<HomeScreen> {
           // Layout loading error - show fallback layout
           if (mounted) {
             setState(() {
-              _layoutWidget = _buildTestLayout();
+              _layoutWidget = _buildEmptyLayout();
               _isLoading = false;
             });
           }
         }
       } else {
         setState(() {
-          _layoutWidget = _buildTestLayout();
+          _layoutWidget = _buildEmptyLayout();
           _isLoading = false;
         });
       }
     } catch (e) {
-      // General error - show fallback layout
       if (mounted) {
         setState(() {
-          _error =
-              null; // Error message - show fallback layout (continue even on error, use default values)
           _isLoading = false;
-          _layoutWidget = _buildTestLayout();
+          _layoutWidget = _buildEmptyLayout();
         });
       }
     }
@@ -195,36 +192,34 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Widget _buildTestLayout() {
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'FlutterforShopware',
-            style: TextStyle(
-                fontSize: 28, fontWeight: FontWeight.bold, color: Colors.blue),
-          ),
-          const SizedBox(height: 20),
-          Card(
-            elevation: 4,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text('Welcome!',
-                      style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
-                  SizedBox(height: 8),
-                  Text('Welcome to FlutterforShopware.',
-                      style: TextStyle(fontSize: 16)),
-                ],
-              ),
+  Widget _buildEmptyLayout() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.storefront_outlined, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              AppConfig.appName,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              'Home page content is not available.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 24),
+            OutlinedButton.icon(
+              onPressed: _loadHomeLayout,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
       ),
     );
   }

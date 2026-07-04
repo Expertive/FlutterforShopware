@@ -566,6 +566,45 @@ class ShopwareApi {
     }
   }
 
+  /// Bootstrap: fetch access key using mobileSalesChannelId + mobileAppSecret.
+  /// Returns true when access key was obtained successfully.
+  Future<bool> bootstrapAccessKey() async {
+    try {
+      final salesChannelId = AppConfig.mobileSalesChannelId;
+      if (salesChannelId.isEmpty || AppConfig.mobileAppSecret.isEmpty) {
+        return false;
+      }
+
+      final bootstrapDio = Dio(BaseOptions(
+        baseUrl: AppConfig.baseUrl,
+        connectTimeout: AppConfig.connectTimeout,
+        receiveTimeout: AppConfig.receiveTimeout,
+      ));
+
+      final response = await bootstrapDio.get(
+        '/flutter/bootstrap',
+        queryParameters: {
+          'salesChannelId': salesChannelId,
+          'appSecret': AppConfig.mobileAppSecret,
+        },
+      );
+
+      if (response.statusCode == 200 &&
+          response.data is Map &&
+          response.data['success'] == true) {
+        final accessKey = response.data['accessKey'] as String? ?? '';
+        if (accessKey.isNotEmpty) {
+          AppConfig.salesChannelAccessKey = accessKey;
+          ApiClient.instance.dio.options.headers['sw-access-key'] = accessKey;
+          return true;
+        }
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   // Get Flutter app configuration
   // With cache mechanism: Read from cache first, then update from backend
   Future<Map<String, dynamic>> getFlutterConfig(
