@@ -3,6 +3,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/models/product.dart';
+import '../core/config/app_config.dart';
+
 class ProductSlider extends StatefulWidget {
   final List<dynamic> products;
   final double height;
@@ -112,7 +115,6 @@ class _ProductSliderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final productId = product['id'] ?? 'unknown';
     final imageUrl = product['imageUrl'] as String?;
     final name = product['name'] as String? ?? 'Product';
     final price = product['price'] as Map<String, dynamic>?;

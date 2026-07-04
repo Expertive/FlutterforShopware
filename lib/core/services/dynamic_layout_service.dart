@@ -842,10 +842,13 @@ class DynamicLayoutService {
       }
     }
 
-    // If product stream exists, fetch products asynchronously
+    // If product stream exists, fetch products asynchronously and enrich with images
     if (streamId != null && streamId.isNotEmpty) {
-      return FutureBuilder<List<Map<String, dynamic>>>(
-        future: _api.getProductsFromStream(streamId, limit: 20),
+      return FutureBuilder<List<Product>>(
+        future: _getProductsWithDetailsFromStream(
+          streamId,
+          limit: 20,
+        ),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return SizedBox(
@@ -858,15 +861,18 @@ class DynamicLayoutService {
             return const SizedBox.shrink();
           }
 
-          final streamProducts = snapshot.data ?? [];
+          final detailedProducts = snapshot.data ?? [];
 
-          if (streamProducts.isEmpty) {
+          if (detailedProducts.isEmpty) {
             return const SizedBox.shrink();
           }
 
+          // ProductSlider şu an Map listesi beklediği için, Product'ları toJson ile geri Map'e çeviriyoruz.
+          final productsWithImages =
+              detailedProducts.map((p) => p.toJson()).toList();
+
           return ProductSlider(
             products: streamProducts,
-            title: sliderData['title'] as String?,
             height: sliderData['height']?.toDouble() ?? 280,
           );
         },
@@ -883,6 +889,70 @@ class DynamicLayoutService {
       title: sliderData['title'] as String?,
       height: sliderData['height']?.toDouble() ?? 280,
     );
+  }
+
+  /// Product stream'den gelen basit ürün listesi için,
+  /// her ürünün detayını `/store-api/product/{id}` ile çekip
+  /// imageUrl gibi alanları doldurur.
+  Future<List<Product>> _getProductsWithDetailsFromStream(
+    String streamId, {
+    int limit = 20,
+  }) async {
+    try {
+      final streamProducts =
+          await _api.getProductsFromStream(streamId, limit: limit);
+
+      if (streamProducts.isEmpty) {
+        return [];
+      }
+
+      final futures = streamProducts.map((p) async {
+        final id = p['id']?.toString();
+        if (id == null || id.isEmpty) {
+          return null;
+        }
+        try {
+          return await _api.getProduct(id);
+        } catch (_) {
+          return null;
+        }
+      }).toList();
+
+      final results = await Future.wait(futures);
+      return results.whereType<Product>().toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// Statik ürün listesi (slotData['products']) için her ürünün detayını çeker.
+  Future<List<Product>> _getProductsWithDetailsFromList(
+    List<dynamic> products, {
+    int? limit,
+  }) async {
+    try {
+      if (products.isEmpty) {
+        return [];
+      }
+
+      final futures = products.take(limit ?? products.length).map((p) async {
+        if (p is Map && p['id'] != null) {
+          final id = p['id'].toString();
+          if (id.isEmpty) return null;
+          try {
+            return await _api.getProduct(id);
+          } catch (_) {
+            return null;
+          }
+        }
+        return null;
+      }).toList();
+
+      final results = await Future.wait(futures);
+      return results.whereType<Product>().toList();
+    } catch (_) {
+      return [];
+    }
   }
 
   Widget _buildProductCard(Map<String, dynamic> cardData,
@@ -1146,9 +1216,21 @@ class DynamicLayoutService {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (title != null && title.isNotEmpty) ...[
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
         ProductSlider(
           products: products,
-          title: title,
           height: 280,
         ),
       ],
