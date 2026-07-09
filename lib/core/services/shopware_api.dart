@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/painting.dart';
 import 'dart:convert';
 
@@ -24,13 +25,15 @@ class ShopwareApi {
 
   Future<Map<String, dynamic>> getLayout(String pageId) async {
     try {
-      // Build URL with cache-busting parameter
-      // Note: Language ID is handled by sw-context-token header automatically
-      // Backend SalesChannelContext uses the language from the token
       String url = '${AppConfig.layoutEndpoint}/$pageId';
       final queryParams = <String, String>{
-        '_t': DateTime.now().millisecondsSinceEpoch.toString(), // Cache busting
+        '_t': DateTime.now().millisecondsSinceEpoch.toString(),
       };
+
+      final languageId = await TokenStorage.instance.loadLanguageId();
+      if (languageId != null && languageId.isNotEmpty) {
+        queryParams['languageId'] = languageId;
+      }
 
       final uri = Uri.parse(url).replace(queryParameters: queryParams);
 
@@ -876,27 +879,45 @@ class ShopwareApi {
     String? countryStateId,
   }) async {
     try {
+      if (languageId != null) {
+        await TokenStorage.instance.saveLanguageId(languageId);
+      }
+      if (currencyId != null) {
+        await TokenStorage.instance.saveCurrencyId(currencyId);
+      }
+
+      final hasOtherFields = billingAddressId != null ||
+          shippingAddressId != null ||
+          paymentMethodId != null ||
+          shippingMethodId != null ||
+          countryId != null ||
+          countryStateId != null;
+
+      // Web browsers often block PATCH via CORS; fetch a new context with
+      // sw-language-id / sw-currency-id headers instead.
+      if (kIsWeb && !hasOtherFields) {
+        await TokenStorage.instance.clearContextToken();
+        return getSalesChannelContext();
+      }
+
       final payload = <String, dynamic>{};
       if (currencyId != null) payload['currencyId'] = currencyId;
       if (languageId != null) payload['languageId'] = languageId;
-      if (billingAddressId != null)
+      if (billingAddressId != null) {
         payload['billingAddressId'] = billingAddressId;
-      if (shippingAddressId != null)
+      }
+      if (shippingAddressId != null) {
         payload['shippingAddressId'] = shippingAddressId;
+      }
       if (paymentMethodId != null) payload['paymentMethodId'] = paymentMethodId;
-      if (shippingMethodId != null)
+      if (shippingMethodId != null) {
         payload['shippingMethodId'] = shippingMethodId;
+      }
       if (countryId != null) payload['countryId'] = countryId;
       if (countryStateId != null) payload['countryStateId'] = countryStateId;
 
       final response = await _dio.patch('/store-api/context', data: payload);
-
-      // Get context token from header
-      final tokenFromHeader = response.headers.value('sw-context-token');
-      if (tokenFromHeader != null && tokenFromHeader.isNotEmpty) {
-        // Save to token storage
-        await TokenStorage.instance.saveContextToken(tokenFromHeader);
-      }
+      await TokenStorage.instance.saveContextTokenFromResponse(response);
 
       return Map<String, dynamic>.from(response.data ?? {});
     } catch (e) {

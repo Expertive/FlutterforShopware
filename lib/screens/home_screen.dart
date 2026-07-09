@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import '../core/utils/color_utils.dart';
+import '../core/utils/logo_url.dart';
+import '../core/utils/l10n_extension.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+
+import '../core/locale/locale_notifier.dart';
 
 import '../core/services/dynamic_layout_service.dart';
 import '../core/services/shopware_api.dart';
@@ -13,15 +18,16 @@ import '../core/storage.dart';
 import '../data/repositories/auth_repository.dart';
 import '../core/models/sales_channel_info.dart';
 import '../core/models/category.dart';
+import '../widgets/app_bar_brand_title.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   final DynamicLayoutService _layoutService = DynamicLayoutService();
   final ShopwareApi _api = ShopwareApi();
 
@@ -70,15 +76,12 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Cookie Usage'),
-        content: const Text(
-          'This website uses cookies to improve your experience. '
-          'By continuing to use our site, you agree to our cookie policy.',
-        ),
+        title: Text(context.l10n.cookieTitle),
+        content: Text(context.l10n.cookieMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Decline'),
+            child: Text(context.l10n.cookieDecline),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
@@ -86,7 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
               backgroundColor: _primaryColor,
               foregroundColor: ColorUtils.foregroundOn(_primaryColor),
             ),
-            child: const Text('Accept'),
+            child: Text(context.l10n.cookieAccept),
           ),
         ],
       ),
@@ -122,6 +125,15 @@ class _HomeScreenState extends State<HomeScreen> {
           setState(() {
             _salesChannelInfo = salesChannelInfo;
           });
+        }
+        if (salesChannelInfo.languageId != null &&
+            salesChannelInfo.languageId!.isNotEmpty) {
+          final storedLangId = await TokenStorage.instance.loadLanguageId();
+          if (storedLangId == null || storedLangId.isEmpty) {
+            await TokenStorage.instance.saveLanguageId(
+              salesChannelInfo.languageId!,
+            );
+          }
         }
         // Load language and currency lists
         _loadLanguagesAndCurrencies(contextData);
@@ -173,16 +185,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  /// Check if user is actually logged in (not just has context token)
-  Future<bool> _checkIfLoggedIn() async {
-    try {
-      await AuthRepository().me();
-      return true;
-    } catch (e) {
-      // 403 or any error means not logged in
-      return false;
-    }
-  }
+  /// Whether the current sales channel context has a logged-in customer.
+  bool get _isLoggedIn => _salesChannelInfo?.hasCustomer ?? false;
 
   /// Get category list for drawer
   /// Initially (_drawerParentCategoryId null) only show subcategories
@@ -215,7 +219,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Home page content is not available.',
+              context.l10n.homeContentUnavailable,
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             ),
@@ -223,7 +227,7 @@ class _HomeScreenState extends State<HomeScreen> {
             OutlinedButton.icon(
               onPressed: _loadHomeLayout,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(context.l10n.commonRetry),
             ),
           ],
         ),
@@ -246,25 +250,20 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       drawer: _buildDrawer(context),
       body: _buildBody(),
-      bottomNavigationBar: _buildBottomNavigationBar(),
+      bottomNavigationBar: _buildBottomNavigationBar(context),
     );
   }
 
   Widget _buildAppBarTitle() {
-    // If still loading and salesChannelInfo is null, show loading
-    if (_isLoading && _salesChannelInfo == null && _appLogoUrl == null) {
-      return const SizedBox(
-        width: 20,
-        height: 20,
-        child: CircularProgressIndicator(strokeWidth: 2),
-      );
-    }
-
-    // AppBar'da sadece text göster (logo DrawerHeader'da)
-    return Text(
-      _salesChannelInfo?.name ?? AppConfig.appName,
-      style: const TextStyle(fontSize: 18),
-      overflow: TextOverflow.ellipsis,
+    return AppBarBrandTitle(
+      configLogoUrl: _appLogoUrl,
+      salesChannelLogoUrl: _salesChannelInfo?.logoUrl,
+      isLoading: _isLoading && LogoUrl.resolve(
+            configLogoUrl: _appLogoUrl,
+            salesChannelLogoUrl: _salesChannelInfo?.logoUrl,
+          ) ==
+          null,
+      foregroundColor: _onPrimaryColor,
     );
   }
 
@@ -312,6 +311,14 @@ class _HomeScreenState extends State<HomeScreen> {
           );
           _loadingLanguagesCurrencies = false;
         });
+        final savedTag = await TokenStorage.instance.loadLocaleTag();
+        final langId = _salesChannelInfo?.languageId;
+        if (savedTag == null && langId != null) {
+          await ref.read(localeProvider.notifier).setFromLanguageId(
+                langId,
+                _availableLanguages,
+              );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -330,6 +337,13 @@ class _HomeScreenState extends State<HomeScreen> {
         languageId: languageId,
         currencyId: currencyId,
       );
+
+      if (languageId != null) {
+        await ref.read(localeProvider.notifier).setFromLanguageId(
+              languageId,
+              _availableLanguages,
+            );
+      }
 
       // Wait for token to be saved
       // Wait for SharedPreferences to commit
@@ -356,24 +370,48 @@ class _HomeScreenState extends State<HomeScreen> {
       // This ensures that new context token is used in API calls
       // Also verifies that new language information is in the context
       final newContext = await _api.getSalesChannelContext();
-      final newLanguage = newContext['language'] as Map<String, dynamic>?;
-
-      // Save new language information to state
-      if (mounted && newLanguage != null) {
-        final salesChannelInfo = SalesChannelInfo.fromContext(newContext);
-        setState(() {
-          _salesChannelInfo = salesChannelInfo;
-        });
+      // Save new language/currency information to state
+      if (mounted) {
+        var info = SalesChannelInfo.fromContext(newContext);
+        if (languageId != null) {
+          String? langName;
+          for (final lang in _availableLanguages) {
+            if (lang['id']?.toString() == languageId) {
+              langName = lang['name']?.toString() ??
+                  lang['translated']?['name']?.toString();
+              break;
+            }
+          }
+          info = info.copyWith(
+            languageId: languageId,
+            languageName: langName ?? info.languageName,
+          );
+        }
+        if (currencyId != null) {
+          String? currencyIso;
+          for (final currency in _availableCurrencies) {
+            if (currency['id']?.toString() == currencyId) {
+              currencyIso = currency['isoCode']?.toString();
+              break;
+            }
+          }
+          info = info.copyWith(
+            currencyId: currencyId,
+            currencyIsoCode: currencyIso ?? info.currencyIsoCode,
+          );
+        }
+        setState(() => _salesChannelInfo = info);
       }
 
-      // Context updated, reload page
+      // Context updated, reload config + page in new language
+      await _api.getFlutterConfig(forceRefresh: true);
       await _loadHomeLayout();
 
       if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Language/Currency updated'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(context.l10n.languageCurrencyUpdated),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -381,7 +419,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Update error: $e'),
+            content: Text(context.l10n.languageCurrencyUpdateError(e.toString())),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -389,39 +427,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Get logo URL and normalize it (can be used for AppBar and DrawerHeader)
-  String? _getLogoUrl() {
-    // First check logo URL from AppConfig, then state variable, then salesChannelInfo
-    String? logoUrl =
-        AppConfig.logoUrl ?? _appLogoUrl ?? _salesChannelInfo?.logoUrl;
-
-    // Logo URL priority: AppConfig > App Logo URL > Sales Channel Info
-
-    // If logoUrl is relative, make it absolute by combining with base URL
-    if (logoUrl != null && logoUrl.isNotEmpty) {
-      if (logoUrl.startsWith('/') ||
-          (!logoUrl.startsWith('http://') && !logoUrl.startsWith('https://'))) {
-        // Relative URL - combine with base URL
-        String baseUrl = AppConfig.baseUrl;
-        if (baseUrl.endsWith('/store-api')) {
-          baseUrl = baseUrl.replaceAll('/store-api', '');
-        }
-        if (baseUrl.endsWith('/public')) {
-          baseUrl = baseUrl.replaceAll('/public', '');
-        }
-        if (baseUrl.endsWith('/')) {
-          baseUrl = baseUrl.substring(0, baseUrl.length - 1);
-        }
-        if (!logoUrl.startsWith('/')) {
-          logoUrl = '$baseUrl/$logoUrl';
-        } else {
-          logoUrl = '$baseUrl$logoUrl';
-        }
-      }
-    }
-
-    return logoUrl;
-  }
+  String? _getLogoUrl() => LogoUrl.resolve(
+        configLogoUrl: _appLogoUrl,
+        salesChannelLogoUrl: _salesChannelInfo?.logoUrl,
+      );
 
   Widget _buildBody() {
     if (_currentIndex == 1) return const SizedBox.shrink();
@@ -431,31 +440,29 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     if (_error != null) {
       return Center(
-          child: Text('Error: $_error',
+          child: Text(context.l10n.commonError(_error!),
               style: const TextStyle(color: Colors.red)));
     }
-    return _layoutWidget ?? const Center(child: Text('Layout loading error'));
+    return _layoutWidget ??
+        Center(child: Text(context.l10n.homeLayoutError));
   }
 
   Widget _buildDrawer(BuildContext context) {
     final hasCurrent =
         _drawerParentCategoryId != null && _drawerParentCategoryId!.isNotEmpty;
     return Drawer(
-      // Drawer açıldığında görünen panelin arka planı (status bar altı dahil)
-      // primary color olsun
+      // Drawer opened background color
+      // primary color should be used
       backgroundColor: _primaryColor,
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color: _primaryColor,
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            Container(
+              color: _primaryColor,
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Logo - get from all sources (AppConfig > App Logo URL > Sales Channel Info)
@@ -465,9 +472,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       if (logoUrl != null && logoUrl.isNotEmpty) {
                         return LayoutBuilder(
                           builder: (context, constraints) {
-                            // DrawerHeader'ın mevcut genişliğine göre maksimum boyutlar
-                            final maxWidth = constraints.maxWidth * 0.8;
-                            final maxHeight = 80.0;
+                            final maxWidth = constraints.maxWidth * 0.75;
+                            const maxHeight = 52.0;
                             
                             return kIsWeb
                                 ? SizedBox(
@@ -535,12 +541,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   Divider(
                     color: _onPrimaryDivider,
                     thickness: 1,
-                    height: 20, // Ekstra dikey boşluk eklemeden ince çizgi
+                    height: 8,
                   ),
-                  const SizedBox(height: 4), // Divider'dan sonra biraz aşağı kaydır
+                  const SizedBox(height: 2),
                   // Language and Currency selection side by side
                   SizedBox(
-                    height: 15, // Satırın toplam yüksekliğini sınırla
+                    height: 28,
                     child: Row(
                       children: [
                         // Language selection
@@ -579,7 +585,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                               lang['name']?.toString() ??
                                                   lang['translated']?['name']
                                                       ?.toString() ??
-                                                  'Unknown';
+                                                  context.l10n.commonUnknown;
                                           return DropdownMenuItem<String>(
                                             value: id,
                                             child: Text(
@@ -610,7 +616,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         )
                                       : Text(
                                           _salesChannelInfo?.languageName ??
-                                              'Language',
+                                              context.l10n.languageLabel,
                                           style: TextStyle(
                                             color: _onPrimaryMuted,
                                             fontSize: 11,
@@ -732,7 +738,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         : Text(
                                             _salesChannelInfo
                                                     ?.currencyIsoCode ??
-                                                'Currency',
+                                                context.l10n.currencyLabel,
                                             style: TextStyle(
                                                 color: _onPrimaryMuted,
                                                 fontSize: 11),
@@ -759,14 +765,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   ListTile(
                     leading: const Icon(Icons.home),
-                    title: const Text('Home'),
+                    title: Text(context.l10n.navHome),
                     onTap: () => Navigator.of(context).pop(),
                   ),
                   ListTile(
                     leading: const Icon(Icons.category),
-                    title: const Text(
-                      'Categories',
-                      style: TextStyle(color: Colors.black),
+                    title: Text(
+                      context.l10n.commonCategories,
+                      style: const TextStyle(color: Colors.black),
                     ),
                     onTap: () {
                       setState(() {
@@ -785,7 +791,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: ListTile(
                   leading: const Icon(Icons.shopping_bag_outlined),
                   title: Text(_drawerCurrentCategoryName ??
-                      'Show products of this category'),
+                      context.l10n.showProductsTooltip),
                   onTap: () {
                     final id = _drawerParentCategoryId!;
                     Navigator.of(context).pop();
@@ -813,9 +819,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     // Error loading categories
                     return Container(
                       color: Colors.white,
-                      child: const Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: Text('Categories not available'),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text(context.l10n.categoriesNotAvailable),
                       ),
                     );
                   }
@@ -823,9 +829,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   if (elements.isEmpty) {
                     return Container(
                       color: Colors.white,
-                      child: const Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: Text('Category not found'),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text(context.l10n.categoryNotFound),
                       ),
                     );
                   }
@@ -842,7 +848,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         if (cat is Category) {
                           // Category object - name is now coming from translated.name
                           name =
-                              cat.name.isNotEmpty ? cat.name : 'Unnamed Category';
+                              cat.name.isNotEmpty ? cat.name : context.l10n.unnamedCategory;
                           id = cat.id;
                         } else if (cat is Map) {
                           // If map is received, check translated.name
@@ -861,7 +867,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           }
                           id = (mapCat['id']?.toString() ?? '');
                         } else {
-                          name = 'Unknown Category';
+                          name = context.l10n.unknownCategory;
                           id = '';
                         }
 
@@ -878,7 +884,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           },
                           trailing: IconButton(
                             icon: const Icon(Icons.chevron_right),
-                            tooltip: 'Show products',
+                            tooltip: context.l10n.showProductsTooltip,
                             onPressed: () {
                               Navigator.of(context).pop();
                               context.go('/category/$id');
@@ -891,69 +897,75 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
             ),
-            FutureBuilder<bool>(
-              future: _checkIfLoggedIn(),
-              builder: (context, snapshot) {
-                final isLoggedIn = snapshot.data ?? false;
-                if (isLoggedIn) {
-                  return ListTile(
-                    leading: const Icon(Icons.logout),
-                    title: const Text('Logout'),
-                    onTap: () async {
+            if (_isLoggedIn)
+              ListTile(
+                leading: const Icon(Icons.logout),
+                title: Text(context.l10n.commonLogout),
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  try {
+                    await AuthRepository().logout();
+                    if (mounted) {
+                      setState(() => _salesChannelInfo = null);
+                      await _loadHomeLayout();
+                    }
+                    if (mounted && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(context.l10n.commonLoggedOut)),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(context.l10n.commonError(e.toString())),
+                        ),
+                      );
+                    }
+                  }
+                },
+              )
+            else
+              Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.login),
+                    title: Text(context.l10n.commonLogin),
+                    onTap: () {
                       Navigator.of(context).pop();
-                      try {
-                        await AuthRepository().logout();
-                        if (mounted && context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Logged out')));
-                        }
-                      } catch (e) {
-                        if (mounted && context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error: $e')));
-                        }
-                      }
+                      context.go('/login');
                     },
-                  );
-                }
-                return Column(
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.login),
-                      title: const Text('Login'),
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        context.go('/login');
-                      },
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.person_add),
-                      title: const Text('Register'),
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        StorefrontNavigation.open(
-                          context,
-                          StorefrontUrl.accountRegister(),
-                          title: 'Register',
-                        );
-                      },
-                    ),
-                  ],
-                );
-              },
-            ),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.person_add),
+                    title: Text(context.l10n.commonRegister),
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      StorefrontNavigation.open(
+                        context,
+                        StorefrontUrl.accountRegister(),
+                        title: context.l10n.commonRegister,
+                      );
+                    },
+                  ),
+                ],
+              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildBottomNavigationBar() {
+  Widget _buildBottomNavigationBar(BuildContext context) {
+    final l10n = context.l10n;
     return BottomNavigationBar(
       type: BottomNavigationBarType.fixed,
       currentIndex: _currentIndex,
       backgroundColor: Colors.white,
-      selectedItemColor: _primaryColor,
+      selectedItemColor: ColorUtils.accentOnSurface(
+        _primaryColor,
+        Colors.white,
+      ),
       unselectedItemColor: Colors.grey,
       onTap: (index) {
         setState(() => _currentIndex = index);
@@ -963,10 +975,16 @@ class _HomeScreenState extends State<HomeScreen> {
           context.go('/account');
         }
       },
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'Cart'),
-        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Account'),
+      items: [
+        BottomNavigationBarItem(icon: const Icon(Icons.home), label: l10n.navHome),
+        BottomNavigationBarItem(
+          icon: const Icon(Icons.shopping_cart),
+          label: l10n.navCart,
+        ),
+        BottomNavigationBarItem(
+          icon: const Icon(Icons.person),
+          label: l10n.navAccount,
+        ),
       ],
     );
   }

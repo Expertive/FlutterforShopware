@@ -10,6 +10,7 @@ import '../core/services/shopware_api.dart';
 import '../data/repositories/address_repository.dart';
 import '../data/repositories/cart_repository.dart';
 import '../data/repositories/checkout_repository.dart';
+import '../core/utils/l10n_extension.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -136,7 +137,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         _selectedShippingAddressId == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please fill in all fields')),
+          SnackBar(content: Text(context.l10n.checkoutFillAllFields)),
         );
       }
       return;
@@ -165,11 +166,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     e['message']?.toString() ?? e['detail']?.toString() ?? '';
                 final key = e['key']?.toString() ?? '';
                 if (key.contains('shipping-address-blocked')) {
-                  return 'This shipping method cannot be used for the selected shipping address. Please select a different address or shipping method.';
+                  return context.l10n.checkoutShippingBlocked;
                 }
-                return msg.isNotEmpty ? msg : 'Unknown error';
+                return msg.isNotEmpty ? msg : context.l10n.commonUnknown;
               }
-              return 'Unknown error';
+              return context.l10n.commonUnknown;
             })
             .where((msg) => msg.isNotEmpty)
             .toList();
@@ -198,10 +199,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         if (customer == null) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Please log in to create an order.'),
+              SnackBar(
+                content: Text(context.l10n.checkoutLoginRequired),
                 backgroundColor: Colors.orange,
-                duration: Duration(seconds: 3),
+                duration: const Duration(seconds: 3),
               ),
             );
           }
@@ -242,11 +243,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         // Order created but required identifiers for payment are missing
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text(
-                  'Order created. Required information for payment could not be retrieved.'),
+                context.l10n.checkoutOrderCreatedMissingPayment,
+              ),
               backgroundColor: Colors.orange,
-              duration: Duration(seconds: 5),
+              duration: const Duration(seconds: 5),
             ),
           );
         }
@@ -277,17 +279,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         // Log payment error but show success message to user
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                  'Your order has been successfully created. Please try again later for payment or contact customer service.'),
+            SnackBar(
+              content: Text(context.l10n.checkoutOrderCreatedPaymentRetry),
               backgroundColor: Colors.green,
-              duration: Duration(seconds: 5),
+              duration: const Duration(seconds: 5),
             ),
           );
         }
       }
     } catch (e) {
-      String errorMessage = 'Payment error: $e';
+      String errorMessage = context.l10n.checkoutPaymentError(e.toString());
 
       // Parse DioException errors
       if (e is DioException && e.response != null) {
@@ -311,8 +312,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 final key = firstError['key']?.toString() ?? '';
 
                 if (key.contains('shipping-address-blocked')) {
-                  errorMessage =
-                      'This shipping method cannot be used for the selected shipping address. Please select a different address or shipping method.';
+                  errorMessage = context.l10n.checkoutShippingBlocked;
                 } else if (detail.isNotEmpty) {
                   errorMessage = detail;
                 }
@@ -338,7 +338,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Checkout'),
+        title: Text(context.l10n.checkoutTitle),
         centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: ColorUtils.foregroundOn(_primaryColor),
@@ -353,12 +353,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
         ],
       ),
-      body: _buildBody(),
-      bottomNavigationBar: _buildBottomBar(),
+      body: _buildBody(context),
+      bottomNavigationBar: _buildBottomBar(context),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator());
     if (_error != null) {
       return Center(
@@ -369,23 +369,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             children: [
               const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
               const SizedBox(height: 12),
-              const Text(
-                'Payment step failed.',
+              Text(
+                context.l10n.checkoutPaymentStepFailed,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Login and try again.',
+              Text(
+                context.l10n.checkoutLoginAndTryAgain,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _load,
-                child: const Text('Try again'),
+                child: Text(context.l10n.commonTryAgain),
               ),
             ],
           ),
@@ -397,8 +397,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Shipping Address',
-              style: TextStyle(fontWeight: FontWeight.bold)),
+          Text(
+            context.l10n.checkoutShippingAddress,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
             value: _selectedShippingAddressId,
@@ -415,8 +417,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             },
           ),
           const SizedBox(height: 16),
-          const Text('Billing Address',
-              style: TextStyle(fontWeight: FontWeight.bold)),
+          Text(
+            context.l10n.checkoutBillingAddress,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
             value: _selectedBillingAddressId,
@@ -433,8 +437,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             },
           ),
           const SizedBox(height: 24),
-          const Text('Shipping Method',
-              style: TextStyle(fontWeight: FontWeight.bold)),
+          Text(
+            context.l10n.checkoutShippingMethod,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
             value: _selectedShipping,
@@ -442,7 +448,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             items: _shippingMethods
                 .map((e) => DropdownMenuItem(
                       value: e['id']?.toString(),
-                      child: Text(e['name']?.toString() ?? 'Shipping'),
+                      child: Text(
+                        e['name']?.toString() ?? context.l10n.commonShipping,
+                      ),
                     ))
                 .toList(),
             onChanged: (v) async {
@@ -451,8 +459,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             },
           ),
           const SizedBox(height: 16),
-          const Text('Payment Method',
-              style: TextStyle(fontWeight: FontWeight.bold)),
+          Text(
+            context.l10n.checkoutPaymentMethod,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
             value: _selectedPayment,
@@ -460,7 +470,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             items: _paymentMethods
                 .map((e) => DropdownMenuItem(
                       value: e['id']?.toString(),
-                      child: Text(e['name']?.toString() ?? 'Payment'),
+                      child: Text(
+                        e['name']?.toString() ?? context.l10n.commonPayment,
+                      ),
                     ))
                 .toList(),
             onChanged: (v) async {
@@ -481,33 +493,42 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Order created',
-                    style: TextStyle(
+                  Text(
+                    context.l10n.checkoutOrderCreated,
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   if (_orderIdentifiers?.orderId != null) ...[
                     const SizedBox(height: 8),
-                    Text('Order ID: ${_orderIdentifiers!.orderId}'),
+                    Text(
+                      context.l10n.checkoutOrderId(
+                        _orderIdentifiers!.orderId!,
+                      ),
+                    ),
                   ],
                   if (_orderIdentifiers?.orderTransactionId != null) ...[
                     const SizedBox(height: 4),
                     Text(
-                        'Transaction ID: ${_orderIdentifiers!.orderTransactionId}'),
+                      context.l10n.checkoutTransactionId(
+                        _orderIdentifiers!.orderTransactionId!,
+                      ),
+                    ),
                   ],
                   if (_paymentResponse != null &&
                       _paymentResponse!.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     Text(
-                      'Payment status: ${_describePaymentResult(_paymentResponse)}',
+                      context.l10n.checkoutPaymentStatus(
+                        _describePaymentResult(context, _paymentResponse),
+                      ),
                       style: const TextStyle(fontWeight: FontWeight.w500),
                     ),
                   ] else ...[
                     const SizedBox(height: 12),
-                    const Text(
-                      'Your order has been successfully created.',
-                      style: TextStyle(fontWeight: FontWeight.w500),
+                    Text(
+                      context.l10n.checkoutOrderCreatedSuccess,
+                      style: const TextStyle(fontWeight: FontWeight.w500),
                     ),
                   ],
                 ],
@@ -521,7 +542,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Future<void> _completePayment() async {
     if (_orderIdentifiers?.orderId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Order ID not found')),
+        SnackBar(content: Text(context.l10n.checkoutOrderIdNotFound)),
       );
       return;
     }
@@ -529,11 +550,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     await StorefrontNavigation.open(
       context,
       StorefrontUrl.orderEdit(_orderIdentifiers!.orderId!),
-      title: 'Payment',
+      title: context.l10n.commonPayment,
     );
   }
 
-  Widget _buildBottomBar() {
+  Widget _buildBottomBar(BuildContext context) {
     // If order is created, show "Complete Payment" button
     if (_orderIdentifiers?.orderId != null) {
       return SafeArea(
@@ -547,7 +568,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 backgroundColor: Colors.green,
                 foregroundColor: ColorUtils.foregroundOn(_primaryColor),
               ),
-              child: const Text('Complete Payment'),
+              child: Text(context.l10n.checkoutCompletePayment),
             ),
           ),
         ),
@@ -571,7 +592,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2))
-                : const Text('Complete Order'),
+                : Text(context.l10n.checkoutCompleteOrder),
           ),
         ),
       ),
@@ -597,7 +618,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final errors = paymentResult['errors'];
     if (errors is List && errors.isNotEmpty) {
       final firstError = errors.first;
-      String message = 'An error occurred during payment.';
+      String message = context.l10n.commonUnknown;
       if (firstError is Map) {
         message = firstError['detail']?.toString() ??
             firstError['message']?.toString() ??
@@ -617,19 +638,21 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       final uri = Uri.tryParse(redirectUrl);
       if (uri != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Redirecting to payment provider...'),
+          SnackBar(
+            content: Text(context.l10n.checkoutRedirectingPayment),
           ),
         );
         StorefrontNavigation.open(
           context,
           redirectUrl,
-          title: 'Payment',
+          title: context.l10n.commonPayment,
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Invalid redirect URL: $redirectUrl'),
+            content: Text(
+              context.l10n.checkoutInvalidRedirectUrl(redirectUrl),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -637,7 +660,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       return;
     }
 
-    final statusMessage = _describePaymentResult(paymentResult);
+    final statusMessage = _describePaymentResult(context, paymentResult);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(statusMessage),
@@ -645,9 +668,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  String _describePaymentResult(Map<String, dynamic>? paymentResult) {
+  String _describePaymentResult(
+    BuildContext context,
+    Map<String, dynamic>? paymentResult,
+  ) {
     if (paymentResult == null || paymentResult.isEmpty) {
-      return 'Payment request sent successfully.';
+      return context.l10n.checkoutOrderCreatedSuccess;
     }
     final message = paymentResult['message']?.toString();
     if (message != null && message.isNotEmpty) {
@@ -658,9 +684,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         paymentResult['paymentState'] ??
         paymentResult['state'];
     if (status != null && status.toString().isNotEmpty) {
-      return 'Payment status: ${status.toString()}';
+      return context.l10n.checkoutPaymentStatus(status.toString());
     }
-    return 'Payment request sent successfully.';
+    return context.l10n.checkoutOrderCreatedSuccess;
   }
 
   String _buildFinishUrl() => '${StorefrontUrl.base()}checkout/finish';

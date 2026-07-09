@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../data/repositories/reviews_repository.dart';
 import '../core/config/app_config.dart';
+import '../core/utils/l10n_extension.dart';
 
 class ReviewsScreen extends StatefulWidget {
   final String productId;
@@ -81,13 +82,15 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
       _contentCtrl.clear();
       await _load();
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Yorum eklendi')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.reviewsAdded)),
+        );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Hata: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.commonError(e.toString()))),
+        );
       }
     } finally {
       if (mounted) setState(() => _posting = false);
@@ -102,14 +105,14 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => _handleBack(context),
         ),
-        title: const Text('Product Reviews'),
+        title: Text(context.l10n.reviewsTitle),
         centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: ColorUtils.foregroundOn(_primaryColor),
       ),
       body: Column(
         children: [
-          Expanded(child: _buildBody()),
+          Expanded(child: _buildBody(context)),
           const Divider(height: 1),
           Padding(
             padding: const EdgeInsets.all(12.0),
@@ -118,7 +121,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
               children: [
                 Row(
                   children: [
-                    const Text('Rating: '),
+                    Text(context.l10n.reviewsRating),
                     DropdownButton<int>(
                       value: _rating,
                       items: List.generate(6, (i) => i)
@@ -131,20 +134,25 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                   ],
                 ),
                 TextField(
-                    controller: _titleCtrl,
-                    decoration: const InputDecoration(labelText: 'Title')),
+                  controller: _titleCtrl,
+                  decoration:
+                      InputDecoration(labelText: context.l10n.reviewsTitleLabel),
+                ),
                 TextField(
-                    controller: _contentCtrl,
-                    decoration: const InputDecoration(labelText: 'Review')),
+                  controller: _contentCtrl,
+                  decoration:
+                      InputDecoration(labelText: context.l10n.reviewsReviewLabel),
+                ),
                 const SizedBox(height: 8),
                 ElevatedButton(
-                    onPressed: _posting ? null : _submit,
-                    child: _posting
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Text('Submit')),
+                  onPressed: _posting ? null : _submit,
+                  child: _posting
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2))
+                      : Text(context.l10n.commonSubmit),
+                ),
               ],
             ),
           )
@@ -153,10 +161,14 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator());
-    if (_error != null) return Center(child: Text('Error: $_error'));
-    if (_items.isEmpty) return const Center(child: Text('No reviews yet'));
+    if (_error != null) {
+      return Center(child: Text(context.l10n.commonError(_error!)));
+    }
+    if (_items.isEmpty) {
+      return Center(child: Text(context.l10n.reviewsEmpty));
+    }
     return ListView.separated(
       itemCount: _items.length,
       separatorBuilder: (_, __) => const Divider(height: 1),
@@ -166,7 +178,11 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
         final content = r['content']?.toString() ?? '';
         final points = r['points']?.toString() ?? '';
         return ListTile(
-          title: Text(title.isEmpty ? 'Rating: $points' : title),
+          title: Text(
+            title.isEmpty
+                ? context.l10n.reviewsRatingValue(points)
+                : title,
+          ),
           subtitle: Text(content),
         );
       },

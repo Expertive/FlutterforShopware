@@ -9,6 +9,7 @@ import '../core/config/app_config.dart';
 import '../core/utils/storefront_url.dart';
 import '../core/utils/storefront_navigation.dart';
 import '../core/services/shopware_api.dart';
+import '../core/utils/l10n_extension.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -135,7 +136,7 @@ class _AccountScreenState extends State<AccountScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => _handleBack(context),
         ),
-        title: const Text('My Account'),
+        title: Text(context.l10n.accountTitle),
         centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: ColorUtils.foregroundOn(_primaryColor),
@@ -146,24 +147,26 @@ class _AccountScreenState extends State<AccountScreen> {
           ),
         ],
       ),
-      body: _buildBody(),
+      body: _buildBody(context),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator());
-    if (_error != null) return Center(child: Text('Error: $_error'));
+    if (_error != null) {
+      return Center(child: Text(context.l10n.commonError(_error!)));
+    }
 
     if (_profile == null) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Please log in'),
+            Text(context.l10n.accountPleaseLogin),
             const SizedBox(height: 8),
             ElevatedButton(
               onPressed: () => context.go('/login'),
-              child: const Text('Login'),
+              child: Text(context.l10n.commonLogin),
             ),
           ],
         ),
@@ -180,9 +183,10 @@ class _AccountScreenState extends State<AccountScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Hello, $firstName $lastName',
-              style:
-                  const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(
+            context.l10n.accountHello(firstName, lastName),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 4),
           Text(email),
           const SizedBox(height: 16),
@@ -191,14 +195,17 @@ class _AccountScreenState extends State<AccountScreen> {
             runSpacing: 12,
             children: [
               OutlinedButton(
-                  onPressed: () => context.go('/orders'),
-                  child: const Text('My Orders')),
+                onPressed: () => context.go('/orders'),
+                child: Text(context.l10n.accountMyOrders),
+              ),
               OutlinedButton(
-                  onPressed: () => context.go('/addresses'),
-                  child: const Text('My Addresses')),
+                onPressed: () => context.go('/addresses'),
+                child: Text(context.l10n.accountMyAddresses),
+              ),
               OutlinedButton(
-                  onPressed: () => context.go('/wishlist'),
-                  child: const Text('Wishlist')),
+                onPressed: () => context.go('/wishlist'),
+                child: Text(context.l10n.accountWishlist),
+              ),
               OutlinedButton(
                 onPressed: _actionLoading
                     ? null
@@ -206,18 +213,19 @@ class _AccountScreenState extends State<AccountScreen> {
                         StorefrontNavigation.open(
                           context,
                           StorefrontUrl.accountProfile(),
-                          title: 'Profile',
+                          title: context.l10n.accountProfile,
                         );
                       },
-                child: const Text('Update Profile'),
+                child: Text(context.l10n.accountUpdateProfile),
               ),
               OutlinedButton(
-                  onPressed: _actionLoading
-                      ? null
-                      : () async {
-                          await _openChangeEmailDialog();
-                        },
-                  child: const Text('Change Email')),
+                onPressed: _actionLoading
+                    ? null
+                    : () async {
+                        await _openChangeEmailDialog();
+                      },
+                child: Text(context.l10n.accountChangeEmail),
+              ),
               OutlinedButton(
                 onPressed: _actionLoading
                     ? null
@@ -225,14 +233,15 @@ class _AccountScreenState extends State<AccountScreen> {
                         StorefrontNavigation.open(
                           context,
                           StorefrontUrl.accountPassword(),
-                          title: 'Change Password',
+                          title: context.l10n.accountChangePassword,
                         );
                       },
-                child: const Text('Change Password'),
+                child: Text(context.l10n.accountChangePassword),
               ),
               OutlinedButton(
-                  onPressed: () => context.push('/settings'),
-                  child: const Text('Language & Currency')),
+                onPressed: () => context.push('/settings'),
+                child: Text(context.l10n.accountLanguageCurrency),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -241,7 +250,7 @@ class _AccountScreenState extends State<AccountScreen> {
               await AuthRepository().logout();
               if (mounted) setState(() => _profile = null);
             },
-            child: const Text('Log Out'),
+            child: Text(context.l10n.accountLogOut),
           ),
         ],
       ),
@@ -255,22 +264,27 @@ class _AccountScreenState extends State<AccountScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Update Profile'),
+          title: Text(context.l10n.accountUpdateProfile),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
-                  controller: firstNameCtrl,
-                  decoration: const InputDecoration(labelText: 'First Name')),
+                controller: firstNameCtrl,
+                decoration:
+                    InputDecoration(labelText: context.l10n.accountFirstName),
+              ),
               TextField(
-                  controller: lastNameCtrl,
-                  decoration: const InputDecoration(labelText: 'Last Name')),
+                controller: lastNameCtrl,
+                decoration:
+                    InputDecoration(labelText: context.l10n.accountLastName),
+              ),
             ],
           ),
           actions: [
             TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel')),
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(context.l10n.commonCancel),
+            ),
             ElevatedButton(
               onPressed: () async {
                 setState(() => _actionLoading = true);
@@ -286,19 +300,23 @@ class _AccountScreenState extends State<AccountScreen> {
                   if (mounted) {
                     Navigator.of(context).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Profile updated')));
+                      SnackBar(content: Text(context.l10n.accountProfileUpdated)),
+                    );
                     await _load();
                   }
                 } catch (e) {
                   if (mounted) {
-                    ScaffoldMessenger.of(context)
-                        .showSnackBar(SnackBar(content: Text('Error: $e')));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(context.l10n.commonError(e.toString())),
+                      ),
+                    );
                   }
                 } finally {
                   if (mounted) setState(() => _actionLoading = false);
                 }
               },
-              child: const Text('Save'),
+              child: Text(context.l10n.commonSave),
             ),
           ],
         );
@@ -314,28 +332,35 @@ class _AccountScreenState extends State<AccountScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Change Email'),
+          title: Text(context.l10n.accountChangeEmail),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
-                  controller: emailCtrl,
-                  decoration: const InputDecoration(labelText: 'New Email')),
+                controller: emailCtrl,
+                decoration:
+                    InputDecoration(labelText: context.l10n.accountNewEmail),
+              ),
               TextField(
-                  controller: confirmCtrl,
-                  decoration:
-                      const InputDecoration(labelText: 'Confirm Email')),
+                controller: confirmCtrl,
+                decoration: InputDecoration(
+                  labelText: context.l10n.accountConfirmEmail,
+                ),
+              ),
               TextField(
-                  controller: passwordCtrl,
-                  decoration:
-                      const InputDecoration(labelText: 'Current Password'),
-                  obscureText: true),
+                controller: passwordCtrl,
+                decoration: InputDecoration(
+                  labelText: context.l10n.accountCurrentPassword,
+                ),
+                obscureText: true,
+              ),
             ],
           ),
           actions: [
             TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel')),
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(context.l10n.commonCancel),
+            ),
             ElevatedButton(
               onPressed: () async {
                 setState(() => _actionLoading = true);
@@ -348,18 +373,22 @@ class _AccountScreenState extends State<AccountScreen> {
                   if (mounted) {
                     Navigator.of(context).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Email updated')));
+                      SnackBar(content: Text(context.l10n.accountEmailUpdated)),
+                    );
                   }
                 } catch (e) {
                   if (mounted) {
-                    ScaffoldMessenger.of(context)
-                        .showSnackBar(SnackBar(content: Text('Error: $e')));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(context.l10n.commonError(e.toString())),
+                      ),
+                    );
                   }
                 } finally {
                   if (mounted) setState(() => _actionLoading = false);
                 }
               },
-              child: const Text('Save'),
+              child: Text(context.l10n.commonSave),
             ),
           ],
         );
@@ -375,30 +404,37 @@ class _AccountScreenState extends State<AccountScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Change Password'),
+          title: Text(context.l10n.accountChangePassword),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
-                  controller: currentCtrl,
-                  decoration:
-                      const InputDecoration(labelText: 'Current Password'),
-                  obscureText: true),
+                controller: currentCtrl,
+                decoration: InputDecoration(
+                  labelText: context.l10n.accountCurrentPassword,
+                ),
+                obscureText: true,
+              ),
               TextField(
-                  controller: newCtrl,
-                  decoration: const InputDecoration(labelText: 'New Password'),
-                  obscureText: true),
+                controller: newCtrl,
+                decoration:
+                    InputDecoration(labelText: context.l10n.accountNewPassword),
+                obscureText: true,
+              ),
               TextField(
-                  controller: confirmCtrl,
-                  decoration:
-                      const InputDecoration(labelText: 'Confirm New Password'),
-                  obscureText: true),
+                controller: confirmCtrl,
+                decoration: InputDecoration(
+                  labelText: context.l10n.accountConfirmNewPassword,
+                ),
+                obscureText: true,
+              ),
             ],
           ),
           actions: [
             TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel')),
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(context.l10n.commonCancel),
+            ),
             ElevatedButton(
               onPressed: () async {
                 setState(() => _actionLoading = true);
@@ -411,18 +447,24 @@ class _AccountScreenState extends State<AccountScreen> {
                   if (mounted) {
                     Navigator.of(context).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Password updated')));
+                      SnackBar(
+                        content: Text(context.l10n.accountPasswordUpdated),
+                      ),
+                    );
                   }
                 } catch (e) {
                   if (mounted) {
-                    ScaffoldMessenger.of(context)
-                        .showSnackBar(SnackBar(content: Text('Error: $e')));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(context.l10n.commonError(e.toString())),
+                      ),
+                    );
                   }
                 } finally {
                   if (mounted) setState(() => _actionLoading = false);
                 }
               },
-              child: const Text('Save'),
+              child: Text(context.l10n.commonSave),
             ),
           ],
         );

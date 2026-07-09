@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../data/repositories/wishlist_repository.dart';
 import '../core/config/app_config.dart';
+import '../core/utils/l10n_extension.dart';
 
 class WishlistScreen extends StatefulWidget {
   const WishlistScreen({super.key});
@@ -72,7 +73,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => _handleBack(context),
         ),
-        title: const Text('İstek Listem'),
+        title: Text(context.l10n.wishlistTitle),
         centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: ColorUtils.foregroundOn(_primaryColor),
@@ -80,20 +81,24 @@ class _WishlistScreenState extends State<WishlistScreen> {
           IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
         ],
       ),
-      body: _buildBody(),
+      body: _buildBody(context),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator());
-    if (_error != null) return Center(child: Text('Hata: $_error'));
-    if (_items.isEmpty) return const Center(child: Text('İstek listeniz boş'));
+    if (_error != null) {
+      return Center(child: Text(context.l10n.commonError(_error!)));
+    }
+    if (_items.isEmpty) {
+      return Center(child: Text(context.l10n.wishlistEmpty));
+    }
     return ListView.separated(
       itemCount: _items.length,
       separatorBuilder: (_, __) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final p = _items[index];
-        final name = p['name']?.toString() ?? 'Product';
+        final name = p['name']?.toString() ?? context.l10n.commonProduct;
         final id = p['id']?.toString() ?? '';
         return ListTile(
           title: Text(name),
@@ -105,8 +110,9 @@ class _WishlistScreenState extends State<WishlistScreen> {
                 await _repo.remove(id);
                 await _load();
               } catch (e) {
-                ScaffoldMessenger.of(context)
-                    .showSnackBar(SnackBar(content: Text('Hata: $e')));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(context.l10n.commonError(e.toString()))),
+                );
               }
             },
           ),

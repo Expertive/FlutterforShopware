@@ -7,6 +7,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../core/services/storefront_session_service.dart';
 import '../core/utils/color_utils.dart';
 import '../core/config/app_config.dart';
+import '../core/utils/l10n_extension.dart';
 
 class StorefrontWebViewScreen extends StatefulWidget {
   const StorefrontWebViewScreen({
@@ -74,7 +75,11 @@ class _StorefrontWebViewScreenState extends State<StorefrontWebViewScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
-        title: Text(widget.title),
+        title: Text(
+          widget.title == 'Shop'
+              ? context.l10n.appTitle
+              : widget.title,
+        ),
         backgroundColor: _primaryColor,
         foregroundColor: ColorUtils.foregroundOn(_primaryColor),
         actions: [

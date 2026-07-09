@@ -1,0 +1,397 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "Shop",
+
+  "navHome": "Home",
+  "navCart": "Cart",
+  "navAccount": "Account",
+
+  "commonError": "Error: {message}",
+  "@commonError": {
+    "placeholders": {
+      "message": { "type": "String" }
+    }
+  },
+  "commonRetry": "Retry",
+  "commonTryAgain": "Try Again",
+  "commonSave": "Save",
+  "commonCancel": "Cancel",
+  "commonLogin": "Login",
+  "commonLogout": "Logout",
+  "commonLoggedOut": "Logged out",
+  "commonRegister": "Register",
+  "commonEmail": "Email",
+  "commonPassword": "Password",
+  "commonSubmit": "Submit",
+  "commonSearch": "Search",
+  "commonCategories": "Categories",
+  "commonProduct": "Product",
+  "commonTotal": "Total",
+  "commonSubtotal": "Subtotal",
+  "commonShipping": "Shipping",
+  "commonPayment": "Payment",
+  "commonOrders": "Orders",
+  "commonUnknown": "Unknown",
+  "commonLoading": "Loading...",
+
+  "cookieTitle": "Cookie Usage",
+  "cookieMessage": "This website uses cookies to improve your experience. By continuing to use our site, you agree to our cookie policy.",
+  "cookieDecline": "Decline",
+  "cookieAccept": "Accept",
+
+  "homeContentUnavailable": "Home page content is not available.",
+  "homeLayoutError": "Layout loading error",
+  "languageCurrencyUpdated": "Language/Currency updated",
+  "languageCurrencyUpdateError": "Update error: {message}",
+  "@languageCurrencyUpdateError": {
+    "placeholders": {
+      "message": { "type": "String" }
+    }
+  },
+  "languageLabel": "Language",
+  "currencyLabel": "Currency",
+  "categoriesNotAvailable": "Categories not available",
+  "categoryNotFound": "Category not found",
+  "showProductsTooltip": "Show products",
+  "unnamedCategory": "Unnamed Category",
+  "unknownCategory": "Unknown Category",
+
+  "loginTitle": "Customer Login",
+  "loginEmailRequired": "Email required",
+  "loginPasswordRequired": "Password required",
+  "loginForgotPassword": "Forgot Password",
+  "loginSuccessful": "Login successful",
+  "passwordRecovery": "Password Recovery",
+
+  "registerTitle": "Register New Account",
+  "registerEmailAddress": "Email Address",
+  "registerNewPassword": "New Password",
+  "registerFirstNameOptional": "First Name (Optional)",
+  "registerLastName": "Last Name",
+  "registerSalutationId": "Salutation ID",
+  "registerEmailRequired": "Email address required",
+  "registerPasswordRequired": "New password required",
+  "registerFirstNameRequired": "First name required",
+  "registerLastNameRequired": "Last name required",
+  "registerSalutationRequired": "Salutation ID required",
+  "registerSuccessful": "Registration Successful",
+
+  "cartTitle": "Cart",
+  "cartEmpty": "Your cart is empty",
+  "cartUnitPrice": "Unit: {price}",
+  "@cartUnitPrice": {
+    "placeholders": {
+      "price": { "type": "String" }
+    }
+  },
+  "cartLineTotal": "Total: {price}",
+  "@cartLineTotal": {
+    "placeholders": {
+      "price": { "type": "String" }
+    }
+  },
+  "cartAppliedDiscounts": "Applied Discounts",
+  "cartDiscount": "Discount",
+  "cartVatPercent": "VAT ({rate}%)",
+  "@cartVatPercent": {
+    "placeholders": {
+      "rate": { "type": "String" }
+    }
+  },
+  "cartExcludingVat": "Excluding VAT",
+  "cartCompleteOrder": "Complete Order",
+  "checkoutTitle": "Checkout",
+
+  "checkoutFillAllFields": "Please fill in all fields",
+  "checkoutLoginRequired": "Please log in to create an order.",
+  "checkoutShippingBlocked": "This shipping method cannot be used for the selected shipping address. Please select a different address or shipping method.",
+  "checkoutOrderCreatedMissingPayment": "Order created. Required information for payment could not be retrieved.",
+  "checkoutOrderCreatedPaymentRetry": "Your order has been successfully created. Please try again later for payment or contact customer service.",
+  "checkoutPaymentError": "Payment error: {message}",
+  "@checkoutPaymentError": {
+    "placeholders": {
+      "message": { "type": "String" }
+    }
+  },
+  "checkoutPaymentStepFailed": "Payment step failed.",
+  "checkoutLoginAndTryAgain": "Login and try again.",
+  "checkoutShippingAddress": "Shipping Address",
+  "checkoutBillingAddress": "Billing Address",
+  "checkoutShippingMethod": "Shipping Method",
+  "checkoutPaymentMethod": "Payment Method",
+  "checkoutOrderCreated": "Order created",
+  "checkoutOrderId": "Order ID: {orderId}",
+  "@checkoutOrderId": {
+    "placeholders": {
+      "orderId": { "type": "String" }
+    }
+  },
+  "checkoutTransactionId": "Transaction ID: {transactionId}",
+  "@checkoutTransactionId": {
+    "placeholders": {
+      "transactionId": { "type": "String" }
+    }
+  },
+  "checkoutPaymentStatus": "Payment status: {status}",
+  "@checkoutPaymentStatus": {
+    "placeholders": {
+      "status": { "type": "String" }
+    }
+  },
+  "checkoutOrderCreatedSuccess": "Your order has been successfully created.",
+  "checkoutOrderIdNotFound": "Order ID not found",
+  "checkoutCompletePayment": "Complete Payment",
+  "checkoutCompleteOrder": "Complete Order",
+  "checkoutRedirectingPayment": "Redirecting to payment provider...",
+  "checkoutInvalidRedirectUrl": "Invalid redirect URL: {url}",
+  "@checkoutInvalidRedirectUrl": {
+    "placeholders": {
+      "url": { "type": "String" }
+    }
+  },
+
+  "productLoading": "Loading product information...",
+  "productNotFound": "Product not found",
+  "productOutOfStock": "Out of Stock",
+  "productInStock": "In Stock",
+  "productLastOne": "Last 1 Item",
+  "productVariantSelection": "Variant Selection",
+  "productOption": "Option",
+  "productDescription": "Product Description",
+  "productCategories": "Categories",
+  "productRelated": "Related Products",
+  "productVariantNotFound": "Variant not found: {message}",
+  "@productVariantNotFound": {
+    "placeholders": {
+      "message": { "type": "String" }
+    }
+  },
+  "productAddedToCart": "{name} added to cart",
+  "@productAddedToCart": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "productAddToCart": "Add to Cart",
+
+  "categoryLoading": "Loading category information...",
+  "categorySubcategories": "Subcategories",
+  "categoryProducts": "Products",
+  "categoryEmpty": "No products or subcategories found in this category yet.",
+  "categoryMenu": "Menu",
+  "categoryNoCategories": "No categories found",
+
+  "searchTitle": "Search",
+  "searchHint": "Search products...",
+  "searchSearching": "Searching...",
+  "searchError": "An error occurred during search. Please try again.",
+  "searchNoResults": "No search results found",
+  "searchTryDifferent": "Try different keywords",
+  "searchPrompt": "Use the search box above to search for products",
+  "searchResultsCount": "\"{query}\" — {count} results found",
+  "@searchResultsCount": {
+    "placeholders": {
+      "query": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+
+  "accountTitle": "My Account",
+  "accountPleaseLogin": "Please log in",
+  "accountHello": "Hello, {firstName} {lastName}",
+  "@accountHello": {
+    "placeholders": {
+      "firstName": { "type": "String" },
+      "lastName": { "type": "String" }
+    }
+  },
+  "accountMyOrders": "My Orders",
+  "accountMyAddresses": "My Addresses",
+  "accountWishlist": "Wishlist",
+  "accountUpdateProfile": "Update Profile",
+  "accountChangeEmail": "Change Email",
+  "accountChangePassword": "Change Password",
+  "accountLanguageCurrency": "Language & Currency",
+  "accountLogOut": "Log Out",
+  "accountFirstName": "First Name",
+  "accountLastName": "Last Name",
+  "accountNewEmail": "New Email",
+  "accountConfirmEmail": "Confirm Email",
+  "accountCurrentPassword": "Current Password",
+  "accountNewPassword": "New Password",
+  "accountConfirmNewPassword": "Confirm New Password",
+  "accountProfileUpdated": "Profile updated",
+  "accountEmailUpdated": "Email updated",
+  "accountPasswordUpdated": "Password updated",
+  "accountProfile": "Profile",
+
+  "addressListTitle": "My Addresses",
+  "addressListEmpty": "No saved addresses.",
+  "addressFallback": "Address",
+  "addressDefaultShipping": "Default shipping address assigned",
+  "addressDefaultBilling": "Default billing address assigned",
+  "addressEdit": "Edit",
+  "addressSetDefaultShipping": "Set as Default Shipping",
+  "addressSetDefaultBilling": "Set as Default Billing",
+  "addressDelete": "Delete",
+  "addressEditTitle": "Edit Address",
+  "addressNewTitle": "New Address",
+  "addressStreet": "Street",
+  "addressPostalCode": "Postal Code",
+  "addressCity": "City",
+  "addressSalutation": "Salutation",
+  "addressSalutationSelect": "Select",
+  "addressCountry": "Country",
+  "addressStateOptional": "State (optional)",
+  "addressState": "State",
+  "addressPhoneOptional": "Phone (optional)",
+  "addressFieldRequired": "{label} required",
+  "@addressFieldRequired": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+
+  "wishlistTitle": "My Wishlist",
+  "wishlistEmpty": "Your wishlist is empty",
+
+  "reviewsTitle": "Product Reviews",
+  "reviewsAdded": "Review added",
+  "reviewsRating": "Rating:",
+  "reviewsRatingValue": "Rating: {points}",
+  "@reviewsRatingValue": {
+    "placeholders": {
+      "points": { "type": "String" }
+    }
+  },
+  "reviewsTitleLabel": "Title",
+  "reviewsReviewLabel": "Review",
+  "reviewsEmpty": "No reviews yet",
+
+  "settingsTitle": "Language & Currency",
+  "settingsLanguage": "Language",
+  "settingsCurrency": "Currency",
+  "settingsUpdated": "Settings updated successfully",
+  "settingsSave": "Save Settings",
+
+  "orderListTitle": "My Orders",
+  "orderListEmpty": "You have no orders yet",
+  "orderListStartShopping": "Start Shopping",
+  "orderNumber": "Order #{number}",
+  "@orderNumber": {
+    "placeholders": {
+      "number": { "type": "String" }
+    }
+  },
+  "orderChangePayment": "Change Payment Method",
+  "orderViewList": "View Order List",
+  "dateUnknown": "Date unknown",
+
+  "orderDetailTitle": "Order Details",
+  "orderDetailNotFound": "Order not found",
+  "orderDetailShippingStatus": "Shipping: {status}",
+  "@orderDetailShippingStatus": {
+    "placeholders": {
+      "status": { "type": "String" }
+    }
+  },
+  "orderDetailItems": "Order Items",
+  "orderDetailNoItems": "No order items found",
+  "orderDetailQuantity": "Quantity: {quantity}",
+  "@orderDetailQuantity": {
+    "placeholders": {
+      "quantity": { "type": "String" }
+    }
+  },
+  "orderDetailBillingAddress": "Billing Address",
+  "orderDetailShippingAddress": "Shipping Address",
+  "orderDetailSummary": "Order Summary",
+  "orderDetailNetTotal": "Net Total",
+  "orderDetailVatPlus": "Plus {rate}% VAT",
+  "@orderDetailVatPlus": {
+    "placeholders": {
+      "rate": { "type": "String" }
+    }
+  },
+  "orderDetailVat": "VAT",
+  "orderDetailDownload": "Download {docType}",
+  "@orderDetailDownload": {
+    "placeholders": {
+      "docType": { "type": "String" }
+    }
+  },
+
+  "passwordResetTitle": "Password Reset",
+  "passwordResetHeading": "Did you forget your password?",
+  "passwordResetInstructions": "Enter your email address, we will send you a password reset link.",
+  "passwordResetSendLink": "Send Password Reset Link",
+  "passwordResetEmailSent": "Email Sent",
+  "passwordResetCheckEmail": "Please check your email at {email}.",
+  "@passwordResetCheckEmail": {
+    "placeholders": {
+      "email": { "type": "String" }
+    }
+  },
+  "passwordResetReturnLogin": "Return to Login Page",
+
+  "passwordConfirmTitle": "Set New Password",
+  "passwordConfirmInstructions": "Select a secure password. It must be at least 8 characters long.",
+  "passwordConfirmNewPasswordConfirm": "New Password (Confirm)",
+  "passwordConfirmRequired": "Please enter your password",
+  "passwordConfirmMinLength": "Password must be at least 8 characters long",
+  "passwordConfirmAgainRequired": "Please enter your password again",
+  "passwordConfirmMismatch": "Passwords do not match",
+  "passwordConfirmUpdate": "Update Password",
+  "passwordConfirmSuccessTitle": "Password Updated Successfully",
+  "passwordConfirmSuccessBody": "You can now login with your new password.",
+
+  "guestOrderTitle": "Guest Order Lookup",
+  "guestOrderHeading": "Lookup Your Orders",
+  "guestOrderSubtitle": "Your email address and postal code can be used to view your orders.",
+  "guestOrderPostalCode": "Postal Code",
+  "guestOrderCodeOptional": "Order Code (Optional)",
+  "guestOrderLookup": "Lookup Orders",
+  "guestOrderYourOrders": "Your Orders",
+
+  "contactTitle": "Contact",
+  "contactHeading": "Contact Us",
+  "contactSubtitle": "Contact us for your questions or suggestions.",
+  "contactSubject": "Subject *",
+  "contactMessage": "Your Message *",
+  "contactSend": "Send",
+  "contactEmailRequired": "Please enter your email address",
+  "contactEmailInvalid": "Please enter a valid email address",
+  "contactSubjectRequired": "Please enter a subject",
+  "contactMessageRequired": "Please enter your message",
+  "contactSuccessTitle": "Your Message Sent",
+  "contactSuccessBody": "We have received your message. We will get back to you as soon as possible.",
+  "contactSendNew": "Send New Message",
+
+  "bootstrapErrorTitle": "Unable to connect",
+  "bootstrapErrorBody": "The app could not authenticate with the store. Please verify the sales channel ID, app secret, and that the mobile app is enabled in Shopware admin.",
+
+  "urlRequired": "URL is required",
+
+  "paymentStatusOpen": "Open",
+  "paymentStatusPaid": "Paid",
+  "paymentStatusPartiallyPaid": "Partially paid",
+  "paymentStatusInProgress": "In progress",
+  "paymentStatusAuthorized": "Authorized",
+  "paymentStatusCancelled": "Cancelled",
+  "paymentStatusRefunded": "Refunded",
+  "paymentStatusPartiallyRefunded": "Partially refunded",
+  "paymentStatusReminded": "Reminded",
+  "paymentStatusFailed": "Failed",
+  "paymentStatusReopened": "Reopened",
+  "paymentStatusUnknown": "Unknown",
+
+  "shippingStatusOpen": "Open",
+  "shippingStatusShipped": "Shipped",
+  "shippingStatusPartiallyShipped": "Partially shipped",
+  "shippingStatusCancelled": "Cancelled",
+  "shippingStatusReturned": "Returned",
+  "shippingStatusPartiallyReturned": "Partially returned",
+  "shippingStatusReopened": "Reopened",
+  "shippingStatusUnknown": "Unknown"
+}

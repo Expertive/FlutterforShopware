@@ -8,6 +8,7 @@ import '../core/config/app_config.dart';
 import '../core/utils/storefront_url.dart';
 import '../core/utils/storefront_navigation.dart';
 import '../core/services/shopware_api.dart';
+import '../core/utils/l10n_extension.dart';
 
 class OrderListScreen extends StatefulWidget {
   const OrderListScreen({super.key});
@@ -141,7 +142,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => _handleBack(context),
         ),
-        title: const Text('My Orders'),
+        title: Text(context.l10n.orderListTitle),
         centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: ColorUtils.foregroundOn(_primaryColor),
@@ -152,8 +153,8 @@ class _OrderListScreenState extends State<OrderListScreen> {
           ),
         ],
       ),
-      body: _buildBody(),
-      bottomNavigationBar: _buildBottomBar(),
+      body: _buildBody(context),
+      bottomNavigationBar: _buildBottomBar(context),
     );
   }
 
@@ -161,11 +162,11 @@ class _OrderListScreenState extends State<OrderListScreen> {
     await StorefrontNavigation.open(
       context,
       StorefrontUrl.accountOrders(),
-      title: 'Orders',
+      title: context.l10n.commonOrders,
     );
   }
 
-  Widget _buildBottomBar() {
+  Widget _buildBottomBar(BuildContext context) {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -174,7 +175,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
           child: ElevatedButton.icon(
             onPressed: _openOrderList,
             icon: const Icon(Icons.list),
-            label: const Text('View Order List'),
+            label: Text(context.l10n.orderViewList),
             style: ElevatedButton.styleFrom(
               backgroundColor: _primaryColor,
               foregroundColor: ColorUtils.foregroundOn(_primaryColor),
@@ -186,7 +187,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(BuildContext context) {
     if (_loading && _orders.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -196,11 +197,11 @@ class _OrderListScreenState extends State<OrderListScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Error: $_error'),
+            Text(context.l10n.commonError(_error!)),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () => _loadOrders(refresh: true),
-              child: const Text('Retry'),
+              child: Text(context.l10n.commonRetry),
             ),
           ],
         ),
@@ -216,13 +217,13 @@ class _OrderListScreenState extends State<OrderListScreen> {
                 size: 64, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
-              'You have no orders yet',
+              context.l10n.orderListEmpty,
               style: TextStyle(fontSize: 18, color: Colors.grey[600]),
             ),
             const SizedBox(height: 8),
             ElevatedButton(
               onPressed: () => context.go('/'),
-              child: const Text('Start Shopping'),
+              child: Text(context.l10n.orderListStartShopping),
             ),
           ],
         ),
@@ -244,43 +245,41 @@ class _OrderListScreenState extends State<OrderListScreen> {
           }
 
           final order = _orders[index];
-          return _buildOrderCard(order);
+          return _buildOrderCard(context, order);
         },
       ),
     );
   }
 
-  String _getPaymentStatusText(String? stateName) {
+  String _getPaymentStatusText(BuildContext context, String? stateName) {
     if (stateName == null || stateName.isEmpty) {
-      return 'Unknown';
+      return context.l10n.paymentStatusUnknown;
     }
 
-    // Translate Shopware payment/transaction states to English
     switch (stateName.toLowerCase()) {
       case 'open':
-        return 'Open';
+        return context.l10n.paymentStatusOpen;
       case 'paid':
-        return 'Paid';
+        return context.l10n.paymentStatusPaid;
       case 'paid_partially':
-        return 'Partially Paid';
+        return context.l10n.paymentStatusPartiallyPaid;
       case 'in_progress':
-        return 'In Progress';
+        return context.l10n.paymentStatusInProgress;
       case 'authorized':
-        return 'Authorized';
+        return context.l10n.paymentStatusAuthorized;
       case 'cancelled':
-        return 'Cancelled';
+        return context.l10n.paymentStatusCancelled;
       case 'refunded':
-        return 'Refunded';
+        return context.l10n.paymentStatusRefunded;
       case 'refunded_partially':
-        return 'Partially Refunded';
+        return context.l10n.paymentStatusPartiallyRefunded;
       case 'reminded':
-        return 'Reminded';
+        return context.l10n.paymentStatusReminded;
       case 'failed':
-        return 'Failed';
+        return context.l10n.paymentStatusFailed;
       case 'reopen':
-        return 'Reopened';
+        return context.l10n.paymentStatusReopened;
       default:
-        // If unknown state, capitalize first letter of each word
         return stateName.split('_').map((word) {
           if (word.isEmpty) return '';
           return word[0].toUpperCase() + word.substring(1).toLowerCase();
@@ -309,7 +308,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
         stateMachineState?['technicalName']?.toString();
   }
 
-  Widget _buildOrderCard(Map<String, dynamic> order) {
+  Widget _buildOrderCard(BuildContext context, Map<String, dynamic> order) {
     final orderNumber = order['orderNumber']?.toString() ?? 'N/A';
     final orderDate = order['orderDateTime']?.toString();
     final price = order['price'] as Map<String, dynamic>?;
@@ -317,7 +316,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
 
     // Get payment status from order
     final rawPaymentStatus = _getPaymentStatusFromOrder(order);
-    final stateName = _getPaymentStatusText(rawPaymentStatus);
+    final stateName = _getPaymentStatusText(context, rawPaymentStatus);
 
     final orderId = order['id']?.toString() ?? '';
 
@@ -331,8 +330,9 @@ class _OrderListScreenState extends State<OrderListScreen> {
     }
 
     final dateFormat = DateFormat('dd.MM.yyyy HH:mm');
-    final formattedDate =
-        parsedDate != null ? dateFormat.format(parsedDate) : 'Date unknown';
+    final formattedDate = parsedDate != null
+        ? dateFormat.format(parsedDate)
+        : context.l10n.dateUnknown;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -351,7 +351,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Order #$orderNumber',
+                          context.l10n.orderNumber(orderNumber),
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -380,7 +380,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Total',
+                    context.l10n.commonTotal,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -401,7 +401,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
                 OutlinedButton.icon(
                   onPressed: () => context.push('/order/$orderId'),
                   icon: const Icon(Icons.payment),
-                  label: const Text('Change Payment Method'),
+                  label: Text(context.l10n.orderChangePayment),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: _primaryColor,
                   ),

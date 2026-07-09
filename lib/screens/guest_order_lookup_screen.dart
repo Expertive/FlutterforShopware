@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../data/repositories/orders_repository.dart';
 import '../core/config/app_config.dart';
 import '../core/services/shopware_api.dart';
+import '../core/utils/l10n_extension.dart';
 
 class GuestOrderLookupScreen extends StatefulWidget {
   const GuestOrderLookupScreen({super.key});
@@ -119,7 +120,7 @@ class _GuestOrderLookupScreenState extends State<GuestOrderLookupScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Guest Order Lookup'),
+        title: Text(context.l10n.guestOrderTitle),
         centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: ColorUtils.foregroundOn(_primaryColor),
@@ -138,9 +139,9 @@ class _GuestOrderLookupScreenState extends State<GuestOrderLookupScreen> {
                 color: _primaryColor,
               ),
               const SizedBox(height: 24),
-              const Text(
-                'Lookup Your Orders',
-                style: TextStyle(
+              Text(
+                context.l10n.guestOrderHeading,
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
@@ -148,7 +149,7 @@ class _GuestOrderLookupScreenState extends State<GuestOrderLookupScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Your email address and postal code can be used to view your orders.',
+                context.l10n.guestOrderSubtitle,
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey[600],
@@ -159,17 +160,17 @@ class _GuestOrderLookupScreenState extends State<GuestOrderLookupScreen> {
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  hintText: 'ornek@email.com',
-                  prefixIcon: Icon(Icons.email),
+                decoration: InputDecoration(
+                  labelText: context.l10n.commonEmail,
+                  hintText: 'example@email.com',
+                  prefixIcon: const Icon(Icons.email),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your email address';
+                    return context.l10n.contactEmailRequired;
                   }
                   if (!value.contains('@')) {
-                    return 'Please enter a valid email address';
+                    return context.l10n.contactEmailInvalid;
                   }
                   return null;
                 },
@@ -178,20 +179,20 @@ class _GuestOrderLookupScreenState extends State<GuestOrderLookupScreen> {
               TextFormField(
                 controller: _zipcodeController,
                 keyboardType: TextInputType.text,
-                decoration: const InputDecoration(
-                  labelText: 'Postal Code',
+                decoration: InputDecoration(
+                  labelText: context.l10n.guestOrderPostalCode,
                   hintText: '34000',
-                  prefixIcon: Icon(Icons.location_on),
+                  prefixIcon: const Icon(Icons.location_on),
                 ),
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _deepLinkCodeController,
                 keyboardType: TextInputType.text,
-                decoration: const InputDecoration(
-                  labelText: 'Order Code (Optional)',
+                decoration: InputDecoration(
+                  labelText: context.l10n.guestOrderCodeOptional,
                   hintText: 'ABC123',
-                  prefixIcon: Icon(Icons.confirmation_number),
+                  prefixIcon: const Icon(Icons.confirmation_number),
                 ),
               ),
               const SizedBox(height: 24),
@@ -212,7 +213,7 @@ class _GuestOrderLookupScreenState extends State<GuestOrderLookupScreen> {
                               AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
                       )
-                    : const Text('Lookup Orders'),
+                    : Text(context.l10n.guestOrderLookup),
               ),
               if (_error != null) ...[
                 const SizedBox(height: 16),
@@ -224,22 +225,22 @@ class _GuestOrderLookupScreenState extends State<GuestOrderLookupScreen> {
                     border: Border.all(color: Colors.red[300]!),
                   ),
                   child: Text(
-                    _error!,
+                    context.l10n.commonError(_error!),
                     style: const TextStyle(color: Colors.red),
                   ),
                 ),
               ],
               if (_orders.isNotEmpty) ...[
                 const SizedBox(height: 32),
-                const Text(
-                  'Your Orders',
-                  style: TextStyle(
+                Text(
+                  context.l10n.guestOrderYourOrders,
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 16),
-                ..._orders.map((order) => _buildOrderCard(order)),
+                ..._orders.map((order) => _buildOrderCard(context, order)),
               ],
             ],
           ),
@@ -248,7 +249,7 @@ class _GuestOrderLookupScreenState extends State<GuestOrderLookupScreen> {
     );
   }
 
-  Widget _buildOrderCard(Map<String, dynamic> order) {
+  Widget _buildOrderCard(BuildContext context, Map<String, dynamic> order) {
     final orderNumber = order['orderNumber']?.toString() ?? 'N/A';
     final orderDate = order['orderDateTime']?.toString();
     final price = order['price'] as Map<String, dynamic>?;
@@ -265,8 +266,9 @@ class _GuestOrderLookupScreenState extends State<GuestOrderLookupScreen> {
     }
 
     final dateFormat = DateFormat('dd.MM.yyyy HH:mm');
-    final formattedDate =
-        parsedDate != null ? dateFormat.format(parsedDate) : 'Date unknown';
+    final formattedDate = parsedDate != null
+        ? dateFormat.format(parsedDate)
+        : context.l10n.dateUnknown;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -281,14 +283,15 @@ class _GuestOrderLookupScreenState extends State<GuestOrderLookupScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Order #$orderNumber',
+                    context.l10n.orderNumber(orderNumber),
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   Text(
-                    '${NumberFormat.currency(symbol: '€', decimalDigits: 2).format(totalPrice)}',
+                    NumberFormat.currency(symbol: '€', decimalDigits: 2)
+                        .format(totalPrice),
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,

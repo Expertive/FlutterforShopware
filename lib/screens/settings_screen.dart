@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
 import '../core/utils/color_utils.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import '../core/locale/locale_notifier.dart';
 
 import '../core/services/shopware_api.dart';
 import '../core/config/app_config.dart';
+import '../core/utils/l10n_extension.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _api = ShopwareApi();
   Map<String, dynamic>? _context;
   List<Map<String, dynamic>> _availableLanguages = [];
@@ -110,7 +114,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _loading = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text(context.l10n.commonError(e.toString()))),
         );
       }
     }
@@ -125,10 +129,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
         languageId: _selectedLanguageId,
         currencyId: _selectedCurrencyId,
       );
+      if (_selectedLanguageId != null) {
+        await ref.read(localeProvider.notifier).setFromLanguageId(
+              _selectedLanguageId,
+              _availableLanguages,
+            );
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Settings updated successfully')),
+          SnackBar(content: Text(context.l10n.settingsUpdated)),
         );
+        await _api.getFlutterConfig(forceRefresh: true);
         await _loadContext();
         // Reload the app to reflect language/currency changes
         // Note: You might want to trigger a full app reload here
@@ -137,7 +148,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         setState(() => _loading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text(context.l10n.commonError(e.toString()))),
         );
       }
     }
@@ -151,7 +162,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Language & Currency'),
+        title: Text(context.l10n.settingsTitle),
         centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: ColorUtils.foregroundOn(_primaryColor),
@@ -164,9 +175,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   if (_availableLanguages.isNotEmpty) ...[
-                    const Text(
-                      'Language',
-                      style: TextStyle(
+                    Text(
+                      context.l10n.settingsLanguage,
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -191,9 +202,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const SizedBox(height: 24),
                   ],
                   if (_availableCurrencies.isNotEmpty) ...[
-                    const Text(
-                      'Currency',
-                      style: TextStyle(
+                    Text(
+                      context.l10n.settingsCurrency,
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -240,7 +251,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
-                        : const Text('Save Settings'),
+                        : Text(context.l10n.settingsSave),
                   ),
                 ],
               ),

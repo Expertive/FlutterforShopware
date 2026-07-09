@@ -28,4 +28,13 @@ class ColorUtils {
   /// Divider color on [background].
   static Color dividerOn(Color background) =>
       isLight(background) ? Colors.black26 : Colors.white24;
+
+  /// Accent (e.g. brand color) readable on [surface]; falls back when too
+  /// similar (e.g. white primary on white bottom bar).
+  static Color accentOnSurface(Color accent, Color surface) {
+    if (isLight(accent) == isLight(surface)) {
+      return foregroundOn(surface);
+    }
+    return accent;
+  }
 }

@@ -8,6 +8,7 @@ import '../core/storage.dart';
 import '../data/repositories/auth_repository.dart';
 import '../core/config/app_config.dart';
 import '../core/models/category.dart';
+import '../core/utils/l10n_extension.dart';
 
 class CategoryScreen extends StatefulWidget {
   final String categoryId;
@@ -95,7 +96,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
       } else {
         if (!mounted) return;
         setState(() {
-          _categoryName = 'Categories';
+          _categoryName = null;
         });
       }
 
@@ -139,7 +140,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => _handleBack(context),
         ),
-        title: Text(_categoryName ?? 'Categories'),
+        title: Text(_categoryName ?? context.l10n.commonCategories),
         centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: ColorUtils.foregroundOn(_primaryColor),
@@ -150,19 +151,19 @@ class _CategoryScreenState extends State<CategoryScreen> {
           ),
         ],
       ),
-      body: _buildBody(),
+      body: _buildBody(context),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(BuildContext context) {
     if (_isLoading) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Loading category information...'),
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(context.l10n.categoryLoading),
           ],
         ),
       );
@@ -180,14 +181,14 @@ class _CategoryScreenState extends State<CategoryScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Error: $_error',
+              context.l10n.commonError(_error!),
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.red),
             ),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _loadCategoryData,
-              child: const Text('Retry'),
+              child: Text(context.l10n.commonRetry),
             ),
           ],
         ),
@@ -200,11 +201,11 @@ class _CategoryScreenState extends State<CategoryScreen> {
         children: [
           // Subcategories
           if (_subcategories.isNotEmpty) ...[
-            const Padding(
-              padding: EdgeInsets.all(16.0),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
               child: Text(
-                'Subcategories',
-                style: TextStyle(
+                context.l10n.categorySubcategories,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -230,13 +231,15 @@ class _CategoryScreenState extends State<CategoryScreen> {
                   final String? imageUrl;
 
                   if (category is Category) {
-                    name =
-                        category.name.isNotEmpty ? category.name : 'Category';
+                    name = category.name.isNotEmpty
+                        ? category.name
+                        : context.l10n.unnamedCategory;
                     id = category.id;
                     imageUrl = category.imageUrl;
                   } else {
                     // Fallback: Map formatında gelirse
-                    name = (category['name']?.toString() ?? 'Category');
+                    name = (category['name']?.toString() ??
+                        context.l10n.unnamedCategory);
                     id = (category['id']?.toString() ?? '');
                     imageUrl = category['imageUrl']?.toString();
                   }
@@ -304,11 +307,11 @@ class _CategoryScreenState extends State<CategoryScreen> {
 
           // Products
           if (_products.isNotEmpty) ...[
-            const Padding(
-              padding: EdgeInsets.all(16.0),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
               child: Text(
-                'Products',
-                style: TextStyle(
+                context.l10n.categoryProducts,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -337,12 +340,12 @@ class _CategoryScreenState extends State<CategoryScreen> {
 
           // Empty state
           if (_products.isEmpty && _subcategories.isEmpty)
-            const Center(
+            Center(
               child: Padding(
-                padding: EdgeInsets.all(32.0),
+                padding: const EdgeInsets.all(32.0),
                 child: Text(
-                  'No products or subcategories found in this category yet.',
-                  style: TextStyle(
+                  context.l10n.categoryEmpty,
+                  style: const TextStyle(
                     fontSize: 16,
                     color: Colors.grey,
                   ),
@@ -360,21 +363,23 @@ class _CategoryScreenState extends State<CategoryScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const DrawerHeader(
+            DrawerHeader(
               child: Text(
-                'Menu',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                context.l10n.categoryMenu,
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ),
             ListTile(
               leading: const Icon(Icons.home),
-              title: const Text('Home'),
+              title: Text(context.l10n.navHome),
               onTap: () => context.go('/'),
             ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Text('Categories',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Text(
+                context.l10n.commonCategories,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
             Expanded(
               child: FutureBuilder<List<dynamic>>(
@@ -388,17 +393,17 @@ class _CategoryScreenState extends State<CategoryScreen> {
                   }
                   final elements = snapshot.data ?? [];
                   if (elements.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Text('No categories found'),
+                    return Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(context.l10n.categoryNoCategories),
                     );
                   }
                   return ListView.builder(
                     itemCount: elements.length,
                     itemBuilder: (context, index) {
                       final cat = elements[index];
-                      final name =
-                          (cat.name ?? cat['name']?.toString()) ?? 'Category';
+                      final name = (cat.name ?? cat['name']?.toString()) ??
+                          context.l10n.unnamedCategory;
                       final id = (cat.id ?? cat['id']?.toString()) ?? '';
                       return ListTile(
                         dense: true,
@@ -421,19 +426,27 @@ class _CategoryScreenState extends State<CategoryScreen> {
                 if (hasToken) {
                   return ListTile(
                     leading: const Icon(Icons.logout),
-                    title: const Text('Logout'),
+                    title: Text(context.l10n.commonLogout),
                     onTap: () async {
                       Navigator.of(context).pop();
                       try {
                         await AuthRepository().logout();
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Logged out')));
+                            SnackBar(
+                              content: Text(context.l10n.commonLoggedOut),
+                            ),
+                          );
                         }
                       } catch (e) {
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error: $e')));
+                            SnackBar(
+                              content: Text(
+                                context.l10n.commonError(e.toString()),
+                              ),
+                            ),
+                          );
                         }
                       }
                     },
@@ -441,7 +454,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                 }
                 return ListTile(
                   leading: const Icon(Icons.login),
-                  title: const Text('Login'),
+                  title: Text(context.l10n.commonLogin),
                   onTap: () => context.go('/login'),
                 );
               },

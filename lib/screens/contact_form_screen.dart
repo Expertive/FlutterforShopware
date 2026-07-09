@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/services/shopware_api.dart';
 import '../core/config/app_config.dart';
+import '../core/utils/l10n_extension.dart';
 
 class ContactFormScreen extends StatefulWidget {
   const ContactFormScreen({super.key});
@@ -110,7 +111,7 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: Text(context.l10n.commonError(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -126,16 +127,16 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Contact'),
+        title: Text(context.l10n.contactTitle),
         centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: ColorUtils.foregroundOn(_primaryColor),
       ),
-      body: _success ? _buildSuccessView() : _buildFormView(),
+      body: _success ? _buildSuccessView(context) : _buildFormView(context),
     );
   }
 
-  Widget _buildFormView() {
+  Widget _buildFormView(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Form(
@@ -150,9 +151,9 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
               color: _primaryColor,
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Contact Us',
-              style: TextStyle(
+            Text(
+              context.l10n.contactHeading,
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
@@ -160,7 +161,7 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Contact us for your questions or suggestions.',
+              context.l10n.contactSubtitle,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
@@ -171,16 +172,16 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
             TextFormField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'E-posta *',
-                prefixIcon: Icon(Icons.email),
+              decoration: InputDecoration(
+                labelText: context.l10n.commonEmail,
+                prefixIcon: const Icon(Icons.email),
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Please enter your email address';
+                  return context.l10n.contactEmailRequired;
                 }
                 if (!value.contains('@')) {
-                  return 'Please enter a valid email address';
+                  return context.l10n.contactEmailInvalid;
                 }
                 return null;
               },
@@ -188,13 +189,13 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _subjectController,
-              decoration: const InputDecoration(
-                labelText: 'Subject *',
-                prefixIcon: Icon(Icons.subject),
+              decoration: InputDecoration(
+                labelText: context.l10n.contactSubject,
+                prefixIcon: const Icon(Icons.subject),
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Please enter a subject';
+                  return context.l10n.contactSubjectRequired;
                 }
                 return null;
               },
@@ -202,40 +203,40 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _firstNameController,
-              decoration: const InputDecoration(
-                labelText: 'First Name',
-                prefixIcon: Icon(Icons.person),
+              decoration: InputDecoration(
+                labelText: context.l10n.accountFirstName,
+                prefixIcon: const Icon(Icons.person),
               ),
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _lastNameController,
-              decoration: const InputDecoration(
-                labelText: 'Last Name',
-                prefixIcon: Icon(Icons.person_outline),
+              decoration: InputDecoration(
+                labelText: context.l10n.accountLastName,
+                prefixIcon: const Icon(Icons.person_outline),
               ),
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _phoneController,
               keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                labelText: 'Phone',
-                prefixIcon: Icon(Icons.phone),
+              decoration: InputDecoration(
+                labelText: context.l10n.addressPhoneOptional,
+                prefixIcon: const Icon(Icons.phone),
               ),
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _commentController,
               maxLines: 5,
-              decoration: const InputDecoration(
-                labelText: 'Your Message *',
-                prefixIcon: Icon(Icons.message),
+              decoration: InputDecoration(
+                labelText: context.l10n.contactMessage,
+                prefixIcon: const Icon(Icons.message),
                 alignLabelWithHint: true,
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Please enter your message';
+                  return context.l10n.contactMessageRequired;
                 }
                 return null;
               },
@@ -257,7 +258,7 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                  : const Text('Send'),
+                  : Text(context.l10n.contactSend),
             ),
           ],
         ),
@@ -265,29 +266,29 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
     );
   }
 
-  Widget _buildSuccessView() {
+  Widget _buildSuccessView(BuildContext context) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.check_circle,
               size: 80,
               color: Colors.green,
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Your Message Sent',
-              style: TextStyle(
+            Text(
+              context.l10n.contactSuccessTitle,
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 16),
             Text(
-              'We have received your message. We will get back to you as soon as possible.',
+              context.l10n.contactSuccessBody,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
@@ -313,7 +314,7 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               ),
-              child: const Text('Send New Message'),
+              child: Text(context.l10n.contactSendNew),
             ),
           ],
         ),

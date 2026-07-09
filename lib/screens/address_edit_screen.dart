@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../data/repositories/address_repository.dart';
 import '../core/services/shopware_api.dart';
 import '../core/config/app_config.dart';
+import '../core/utils/l10n_extension.dart';
 
 class AddressEditScreen extends StatefulWidget {
   final Map<String, dynamic>? initial;
@@ -99,7 +100,8 @@ class _AddressEditScreenState extends State<AddressEditScreen> {
         'city': _city.text.trim(),
         'salutationId': _salutationId.text.trim(),
         'countryId': _countryId.text.trim(),
-        if (_countryStateId.text.trim().isNotEmpty) 'countryStateId': _countryStateId.text.trim(),
+        if (_countryStateId.text.trim().isNotEmpty)
+          'countryStateId': _countryStateId.text.trim(),
         if (_phone.text.trim().isNotEmpty) 'phoneNumber': _phone.text.trim(),
       };
       final repo = AddressRepository();
@@ -136,18 +138,23 @@ class _AddressEditScreenState extends State<AddressEditScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final editing = widget.initial != null && widget.initial!['id'] != null;
 
     // Ensure dropdown values exist in items; otherwise null to avoid assertion
     final currentSalutationId = _salutationId.text;
     final salutationValue = currentSalutationId.isNotEmpty &&
-            _salutations.any((e) => (e['id']?.toString() ?? '') == currentSalutationId)
+            _salutations.any(
+              (e) => (e['id']?.toString() ?? '') == currentSalutationId,
+            )
         ? currentSalutationId
         : null;
 
     final currentCountryId = _countryId.text;
     final countryValue = currentCountryId.isNotEmpty &&
-            _countries.any((e) => (e['id']?.toString() ?? '') == currentCountryId)
+            _countries.any(
+              (e) => (e['id']?.toString() ?? '') == currentCountryId,
+            )
         ? currentCountryId
         : null;
 
@@ -163,7 +170,7 @@ class _AddressEditScreenState extends State<AddressEditScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => _handleBack(context),
         ),
-        title: Text(editing ? 'Edit Address' : 'New Address'),
+        title: Text(editing ? l10n.addressEditTitle : l10n.addressNewTitle),
         centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: ColorUtils.foregroundOn(_primaryColor),
@@ -174,20 +181,23 @@ class _AddressEditScreenState extends State<AddressEditScreen> {
           key: _formKey,
           child: ListView(
             children: [
-              _field(_firstName, 'First Name'),
-              _field(_lastName, 'Last Name'),
-              _field(_street, 'Street'),
-              _field(_zipcode, 'Postal Code'),
-              _field(_city, 'City'),
-              // Salutation dropdown
+              _field(context, _firstName, l10n.accountFirstName),
+              _field(context, _lastName, l10n.accountLastName),
+              _field(context, _street, l10n.addressStreet),
+              _field(context, _zipcode, l10n.addressPostalCode),
+              _field(context, _city, l10n.addressCity),
               DropdownButtonFormField<String>(
                 value: salutationValue,
                 isExpanded: true,
-                decoration: const InputDecoration(labelText: 'Hitap (Salutation)'),
+                decoration: InputDecoration(labelText: l10n.addressSalutation),
                 items: _salutations
                     .map((e) => DropdownMenuItem(
                           value: e['id']?.toString(),
-                          child: Text(e['displayName']?.toString() ?? e['salutationKey']?.toString() ?? 'Seçin'),
+                          child: Text(
+                            e['displayName']?.toString() ??
+                                e['salutationKey']?.toString() ??
+                                l10n.addressSalutationSelect,
+                          ),
                         ))
                     .toList(),
                 onChanged: (v) => setState(() => _salutationId.text = v ?? ''),
@@ -196,11 +206,13 @@ class _AddressEditScreenState extends State<AddressEditScreen> {
               DropdownButtonFormField<String>(
                 value: countryValue,
                 isExpanded: true,
-                decoration: const InputDecoration(labelText: 'Country'),
+                decoration: InputDecoration(labelText: l10n.addressCountry),
                 items: _countries
                     .map((e) => DropdownMenuItem(
                           value: e['id']?.toString(),
-                          child: Text(e['name']?.toString() ?? 'Country'),
+                          child: Text(
+                            e['name']?.toString() ?? l10n.addressCountry,
+                          ),
                         ))
                     .toList(),
                 onChanged: (v) async {
@@ -219,29 +231,44 @@ class _AddressEditScreenState extends State<AddressEditScreen> {
               DropdownButtonFormField<String>(
                 value: stateValue,
                 isExpanded: true,
-                decoration: const InputDecoration(labelText: 'State (optional)'),
+                decoration: InputDecoration(labelText: l10n.addressStateOptional),
                 items: _states
                     .map((e) => DropdownMenuItem(
                           value: e['id']?.toString(),
-                          child: Text(e['name']?.toString() ?? 'State'),
+                          child: Text(
+                            e['name']?.toString() ?? l10n.addressState,
+                          ),
                         ))
                     .toList(),
-                onChanged: (v) => setState(() => _countryStateId.text = v ?? ''),
+                onChanged: (v) =>
+                    setState(() => _countryStateId.text = v ?? ''),
               ),
-              _field(_phone, 'Phone (optional)', required: false),
+              _field(
+                context,
+                _phone,
+                l10n.addressPhoneOptional,
+                required: false,
+              ),
               const SizedBox(height: 12),
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8.0),
-                  child: Text(_error!, style: const TextStyle(color: Colors.red)),
+                  child: Text(
+                    context.l10n.commonError(_error!),
+                    style: const TextStyle(color: Colors.red),
+                  ),
                 ),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _loading ? null : _save,
                   child: _loading
-                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text('Save'),
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(l10n.commonSave),
                 ),
               ),
             ],
@@ -251,18 +278,23 @@ class _AddressEditScreenState extends State<AddressEditScreen> {
     );
   }
 
-  Widget _field(TextEditingController c, String label, {bool required = true}) {
+  Widget _field(
+    BuildContext context,
+    TextEditingController c,
+    String label, {
+    bool required = true,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: TextFormField(
         controller: c,
         decoration: InputDecoration(labelText: label),
         validator: required
-            ? (v) => (v == null || v.isEmpty) ? '$label required' : null
+            ? (v) => (v == null || v.isEmpty)
+                ? context.l10n.addressFieldRequired(label)
+                : null
             : null,
       ),
     );
   }
 }
-
-

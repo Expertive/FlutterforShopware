@@ -8,6 +8,7 @@ import '../core/config/app_config.dart';
 import '../core/utils/storefront_url.dart';
 import '../core/utils/storefront_navigation.dart';
 import '../core/services/shopware_api.dart';
+import '../core/utils/l10n_extension.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   final String orderId;
@@ -96,37 +97,35 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
   }
 
-  String _getPaymentStatusText(String? stateName) {
+  String _getPaymentStatusText(BuildContext context, String? stateName) {
     if (stateName == null || stateName.isEmpty) {
-      return 'Bilinmiyor';
+      return context.l10n.paymentStatusUnknown;
     }
 
-    // Translate Shopware payment/transaction states to English
     switch (stateName.toLowerCase()) {
       case 'open':
-        return 'Open';
+        return context.l10n.paymentStatusOpen;
       case 'paid':
-        return 'Paid';
+        return context.l10n.paymentStatusPaid;
       case 'paid_partially':
-        return 'Partially Paid';
+        return context.l10n.paymentStatusPartiallyPaid;
       case 'in_progress':
-        return 'In Progress';
+        return context.l10n.paymentStatusInProgress;
       case 'authorized':
-        return 'Authorized';
+        return context.l10n.paymentStatusAuthorized;
       case 'cancelled':
-        return 'Cancelled';
+        return context.l10n.paymentStatusCancelled;
       case 'refunded':
-        return 'Refunded';
+        return context.l10n.paymentStatusRefunded;
       case 'refunded_partially':
-        return 'Partially Refunded';
+        return context.l10n.paymentStatusPartiallyRefunded;
       case 'reminded':
-        return 'Reminded';
+        return context.l10n.paymentStatusReminded;
       case 'failed':
-        return 'Failed';
+        return context.l10n.paymentStatusFailed;
       case 'reopen':
-        return 'Reopened';
+        return context.l10n.paymentStatusReopened;
       default:
-        // If unknown state, capitalize first letter of each word
         return stateName.split('_').map((word) {
           if (word.isEmpty) return '';
           return word[0].toUpperCase() + word.substring(1).toLowerCase();
@@ -155,29 +154,27 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         stateMachineState?['technicalName']?.toString();
   }
 
-  String _getShippingStatusText(String? stateName) {
+  String _getShippingStatusText(BuildContext context, String? stateName) {
     if (stateName == null || stateName.isEmpty) {
-      return 'Unknown';
+      return context.l10n.shippingStatusUnknown;
     }
 
-    // Translate Shopware shipping/delivery states to English
     switch (stateName.toLowerCase()) {
       case 'open':
-        return 'Open';
+        return context.l10n.shippingStatusOpen;
       case 'shipped':
-        return 'Shipped';
+        return context.l10n.shippingStatusShipped;
       case 'shipped_partially':
-        return 'Partially Shipped';
+        return context.l10n.shippingStatusPartiallyShipped;
       case 'cancelled':
-        return 'Cancelled';
+        return context.l10n.shippingStatusCancelled;
       case 'returned':
-        return 'Returned';
+        return context.l10n.shippingStatusReturned;
       case 'returned_partially':
-        return 'Partially Returned';
+        return context.l10n.shippingStatusPartiallyReturned;
       case 'reopen':
-        return 'Reopened';
+        return context.l10n.shippingStatusReopened;
       default:
-        // If unknown state, capitalize first letter of each word
         return stateName.split('_').map((word) {
           if (word.isEmpty) return '';
           return word[0].toUpperCase() + word.substring(1).toLowerCase();
@@ -208,7 +205,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     await StorefrontNavigation.open(
       context,
       StorefrontUrl.accountOrders(),
-      title: 'Orders',
+      title: context.l10n.commonOrders,
     );
   }
 
@@ -220,7 +217,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Order Details'),
+        title: Text(context.l10n.orderDetailTitle),
         centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: ColorUtils.foregroundOn(_primaryColor),
@@ -231,11 +228,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           ),
         ],
       ),
-      body: _buildBody(),
+      body: _buildBody(context),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(BuildContext context) {
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -245,11 +242,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Error: $_error'),
+            Text(context.l10n.commonError(_error!)),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _loadOrder,
-              child: const Text('Retry'),
+              child: Text(context.l10n.commonRetry),
             ),
           ],
         ),
@@ -257,7 +254,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
 
     if (_order == null) {
-      return const Center(child: Text('Order not found'));
+      return Center(child: Text(context.l10n.orderDetailNotFound));
     }
 
     return SingleChildScrollView(
@@ -265,31 +262,33 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildOrderHeader(),
+          _buildOrderHeader(context),
           const SizedBox(height: 24),
-          _buildOrderItems(),
+          _buildOrderItems(context),
           const SizedBox(height: 24),
-          _buildAddresses(),
+          _buildAddresses(context),
           const SizedBox(height: 24),
-          _buildOrderSummary(),
+          _buildOrderSummary(context),
           const SizedBox(height: 24),
-          _buildActions(),
+          _buildActions(context),
         ],
       ),
     );
   }
 
-  Widget _buildOrderHeader() {
+  Widget _buildOrderHeader(BuildContext context) {
     final orderNumber = _order!['orderNumber']?.toString() ?? 'N/A';
     final orderDate = _order!['orderDateTime']?.toString();
 
     // Get payment status from order
     final rawPaymentStatus = _getPaymentStatusFromOrder(_order!);
-    final paymentStatus = _getPaymentStatusText(rawPaymentStatus);
+    final paymentStatus =
+        _getPaymentStatusText(context, rawPaymentStatus);
 
     // Get shipping status from order
     final rawShippingStatus = _getShippingStatusFromOrder(_order!);
-    final shippingStatus = _getShippingStatusText(rawShippingStatus);
+    final shippingStatus =
+        _getShippingStatusText(context, rawShippingStatus);
 
     DateTime? parsedDate;
     if (orderDate != null) {
@@ -301,8 +300,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
 
     final dateFormat = DateFormat('dd.MM.yyyy HH:mm');
-    final formattedDate =
-        parsedDate != null ? dateFormat.format(parsedDate) : 'Date unknown';
+    final formattedDate = parsedDate != null
+        ? dateFormat.format(parsedDate)
+        : context.l10n.dateUnknown;
 
     return Card(
       child: Padding(
@@ -314,7 +314,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Order #$orderNumber',
+                  context.l10n.orderNumber(orderNumber),
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -339,7 +339,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 ),
                 const SizedBox(width: 12),
                 Chip(
-                  label: Text('Shipping: $shippingStatus'),
+                  label: Text(
+                    context.l10n.orderDetailShippingStatus(shippingStatus),
+                  ),
                   backgroundColor: Colors.green.withOpacity(0.1),
                   labelStyle: const TextStyle(color: Colors.green),
                   padding:
@@ -353,7 +355,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  Widget _buildOrderItems() {
+  Widget _buildOrderItems(BuildContext context) {
     final lineItems = _order!['lineItems'] as List? ?? [];
 
     if (lineItems.isEmpty) {
@@ -363,16 +365,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Order Items',
-                style: TextStyle(
+              Text(
+                context.l10n.orderDetailItems,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 16),
               Text(
-                'No order items found',
+                context.l10n.orderDetailNoItems,
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey[600],
@@ -390,24 +392,25 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Order Items',
-              style: TextStyle(
+            Text(
+              context.l10n.orderDetailItems,
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 16),
-            ...lineItems
-                .map((item) => _buildLineItem(item as Map<String, dynamic>)),
+            ...lineItems.map(
+              (item) => _buildLineItem(context, item as Map<String, dynamic>),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildLineItem(Map<String, dynamic> item) {
-    final label = item['label']?.toString() ?? 'Product';
+  Widget _buildLineItem(BuildContext context, Map<String, dynamic> item) {
+    final label = item['label']?.toString() ?? context.l10n.commonProduct;
     final quantity = item['quantity'] as int? ?? 1;
     final price = item['price'] as Map<String, dynamic>?;
     final totalPrice = price?['totalPrice'] as num? ?? 0.0;
@@ -456,7 +459,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Quantity: $quantity',
+                  context.l10n.orderDetailQuantity('$quantity'),
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey[600],
@@ -479,7 +482,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  Widget _buildAddresses() {
+  Widget _buildAddresses(BuildContext context) {
     final billingAddress = _order!['billingAddress'] as Map<String, dynamic>?;
     final shippingAddress = _order!['deliveries']?[0]?['shippingOrderAddress']
         as Map<String, dynamic>?;
@@ -492,8 +495,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     // If only one address is found, show it full width
     if (billingAddress == null || shippingAddress == null) {
       return billingAddress != null
-          ? _buildAddressCard('Billing Address', billingAddress)
-          : _buildAddressCard('Shipping Address', shippingAddress!);
+          ? _buildAddressCard(
+              context,
+              context.l10n.orderDetailBillingAddress,
+              billingAddress,
+            )
+          : _buildAddressCard(
+              context,
+              context.l10n.orderDetailShippingAddress,
+              shippingAddress!,
+            );
     }
 
     // If both addresses are found, show them side by side
@@ -501,17 +512,29 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: _buildAddressCard('Billing Address', billingAddress),
+          child: _buildAddressCard(
+            context,
+            context.l10n.orderDetailBillingAddress,
+            billingAddress,
+          ),
         ),
         const SizedBox(width: 16),
         Expanded(
-          child: _buildAddressCard('Shipping Address', shippingAddress),
+          child: _buildAddressCard(
+            context,
+            context.l10n.orderDetailShippingAddress,
+            shippingAddress,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildAddressCard(String title, Map<String, dynamic> address) {
+  Widget _buildAddressCard(
+    BuildContext context,
+    String title,
+    Map<String, dynamic> address,
+  ) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -591,7 +614,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  Widget _buildOrderSummary() {
+  Widget _buildOrderSummary(BuildContext context) {
     final price = _order!['price'] as Map<String, dynamic>?;
     final netPrice = price?['netPrice'] as num? ?? 0.0;
     final totalPrice = price?['totalPrice'] as num? ?? 0.0;
@@ -626,31 +649,48 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Order Summary',
-              style: TextStyle(
+            Text(
+              context.l10n.orderDetailSummary,
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 16),
-            _buildSummaryRow('Subtotal', netPrice),
-            _buildSummaryRow('Shipping', shippingTotal),
-            _buildSummaryRow('Net Total', netPrice + shippingTotal),
+            _buildSummaryRow(context, context.l10n.commonSubtotal, netPrice),
+            _buildSummaryRow(context, context.l10n.commonShipping, shippingTotal),
+            _buildSummaryRow(
+              context,
+              context.l10n.orderDetailNetTotal,
+              netPrice + shippingTotal,
+            ),
             if (taxRate != null)
               _buildSummaryRow(
-                  'Plus ${taxRate.toStringAsFixed(0)}% VAT', totalTax)
+                context,
+                context.l10n.orderDetailVatPlus(taxRate.toStringAsFixed(0)),
+                totalTax,
+              )
             else
-              _buildSummaryRow('VAT', totalTax),
+              _buildSummaryRow(context, context.l10n.orderDetailVat, totalTax),
             const Divider(height: 24),
-            _buildSummaryRow('Total', totalPrice, isTotal: true),
+            _buildSummaryRow(
+              context,
+              context.l10n.commonTotal,
+              totalPrice,
+              isTotal: true,
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSummaryRow(String label, num amount, {bool isTotal = false}) {
+  Widget _buildSummaryRow(
+    BuildContext context,
+    String label,
+    num amount, {
+    bool isTotal = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Row(
@@ -676,7 +716,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  Widget _buildActions() {
+  Widget _buildActions(BuildContext context) {
     final documents = _order!['documents'] as List? ?? [];
 
     return Column(
@@ -686,7 +726,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           child: ElevatedButton.icon(
             onPressed: _openOrderList,
             icon: const Icon(Icons.list),
-            label: const Text('View Order List'),
+            label: Text(context.l10n.orderViewList),
             style: ElevatedButton.styleFrom(
               backgroundColor: _primaryColor,
               foregroundColor: ColorUtils.foregroundOn(_primaryColor),
@@ -700,14 +740,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             final docId = doc['id']?.toString() ?? '';
             final deepLinkCode = doc['deepLinkCode']?.toString() ?? '';
             final docType =
-                doc['documentType']?['name']?.toString() ?? 'Document';
+                doc['documentType']?['name']?.toString() ??
+                    context.l10n.commonUnknown;
 
             return SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
-                onPressed: () => _downloadDocument(docId, deepLinkCode),
+                onPressed: () => _downloadDocument(docId, deepLinkCode, docType),
                 icon: const Icon(Icons.download),
-                label: Text('Download $docType'),
+                label: Text(context.l10n.orderDetailDownload(docType)),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: _primaryColor,
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -720,11 +761,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  Future<void> _downloadDocument(String documentId, String deepLinkCode) async {
+  Future<void> _downloadDocument(
+    String documentId,
+    String deepLinkCode,
+    String docType,
+  ) async {
     await StorefrontNavigation.open(
       context,
       StorefrontUrl.documentDownload(documentId, deepLinkCode),
-      title: 'Document',
+      title: docType,
     );
   }
 }

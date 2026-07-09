@@ -10,6 +10,7 @@ import '../core/models/sales_channel_info.dart';
 import '../core/utils/currency_formatter.dart';
 import '../core/utils/storefront_url.dart';
 import '../core/utils/storefront_navigation.dart';
+import '../core/utils/l10n_extension.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -119,7 +120,7 @@ class _CartScreenState extends State<CartScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => _handleBack(context),
         ),
-        title: const Text('Cart'),
+        title: Text(context.l10n.cartTitle),
         centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: ColorUtils.foregroundOn(_primaryColor),
@@ -130,21 +131,21 @@ class _CartScreenState extends State<CartScreen> {
           ),
         ],
       ),
-      body: _buildBody(),
+      body: _buildBody(context),
       bottomNavigationBar: _buildBottomBar(context),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(BuildContext context) {
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
     if (_error != null) {
-      return Center(child: Text('Error: $_error'));
+      return Center(child: Text(context.l10n.commonError(_error!)));
     }
     final items = (_cart?['lineItems'] as List?) ?? [];
     if (items.isEmpty) {
-      return const Center(child: Text('Your cart is empty'));
+      return Center(child: Text(context.l10n.cartEmpty));
     }
     return Column(
       children: [
@@ -154,7 +155,8 @@ class _CartScreenState extends State<CartScreen> {
             separatorBuilder: (_, __) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final item = items[index] as Map<String, dynamic>;
-              final label = item['label']?.toString() ?? 'Product';
+              final label =
+                  item['label']?.toString() ?? context.l10n.commonProduct;
               final qty =
                   int.tryParse(item['quantity']?.toString() ?? '1') ?? 1;
               final id = item['id']?.toString();
@@ -166,8 +168,10 @@ class _CartScreenState extends State<CartScreen> {
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (unitPrice != null) Text('Unit: ${_formatPrice(unitPrice)}'),
-                    if (totalPrice != null) Text('Total: ${_formatPrice(totalPrice)}'),
+                    if (unitPrice != null)
+                      Text(context.l10n.cartUnitPrice(_formatPrice(unitPrice))),
+                    if (totalPrice != null)
+                      Text(context.l10n.cartLineTotal(_formatPrice(totalPrice))),
                   ],
                 ),
                 trailing: SizedBox(
@@ -190,7 +194,11 @@ class _CartScreenState extends State<CartScreen> {
                                 } catch (e) {
                                   if (mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Error: $e')),
+                                      SnackBar(
+                                        content: Text(
+                                          context.l10n.commonError(e.toString()),
+                                        ),
+                                      ),
                                     );
                                   }
                                 }
@@ -212,7 +220,11 @@ class _CartScreenState extends State<CartScreen> {
                                 } catch (e) {
                                   if (mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Error: $e')),
+                                      SnackBar(
+                                        content: Text(
+                                          context.l10n.commonError(e.toString()),
+                                        ),
+                                      ),
                                     );
                                   }
                                 }
@@ -229,7 +241,11 @@ class _CartScreenState extends State<CartScreen> {
                                 } catch (e) {
                                   if (mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Error: $e')),
+                                      SnackBar(
+                                        content: Text(
+                                          context.l10n.commonError(e.toString()),
+                                        ),
+                                      ),
                                     );
                                   }
                                 }
@@ -242,12 +258,12 @@ class _CartScreenState extends State<CartScreen> {
             },
           ),
         ),
-        _buildTotals(),
+        _buildTotals(context),
       ],
     );
   }
 
-  Widget _buildTotals() {
+  Widget _buildTotals(BuildContext context) {
     final price = _cart?['price'] as Map<String, dynamic>?;
     if (price == null) return const SizedBox.shrink();
     final positionPrice = price['positionPrice'];
@@ -276,11 +292,13 @@ class _CartScreenState extends State<CartScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (promotions.isNotEmpty) ...[
-            const Text('Applied Discounts',
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              context.l10n.cartAppliedDiscounts,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             ...promotions.map((p) {
-              final label = p['label']?.toString() ?? 'Discount';
+              final label = p['label']?.toString() ?? context.l10n.cartDiscount;
               final discount = p['price']?['totalPrice'];
               return Padding(
                 padding: const EdgeInsets.only(bottom: 4.0),
@@ -302,7 +320,7 @@ class _CartScreenState extends State<CartScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Subtotal'),
+                Text(context.l10n.commonSubtotal),
                 Text(_formatPrice(positionPrice)),
               ],
             ),
@@ -311,7 +329,7 @@ class _CartScreenState extends State<CartScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Shipping'),
+                Text(context.l10n.commonShipping),
                 Text(_formatPrice(shippingCost)),
               ],
             ),
@@ -326,7 +344,7 @@ class _CartScreenState extends State<CartScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('VAT (%$rate)'),
+                    Text(context.l10n.cartVatPercent(rate)),
                     Text(_formatPrice(amount)),
                   ],
                 ),
@@ -338,7 +356,7 @@ class _CartScreenState extends State<CartScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Excluding VAT'),
+                Text(context.l10n.cartExcludingVat),
                 Text(_formatPrice(netPrice)),
               ],
             ),
@@ -347,8 +365,10 @@ class _CartScreenState extends State<CartScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Total',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              Text(
+                context.l10n.commonTotal,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
               Text(
                 _formatPrice(totalPrice),
                 style: const TextStyle(
@@ -382,10 +402,10 @@ class _CartScreenState extends State<CartScreen> {
               await StorefrontNavigation.open(
                 context,
                 StorefrontUrl.checkoutConfirm(),
-                title: 'Checkout',
+                title: context.l10n.checkoutTitle,
               );
             },
-            child: const Text('Complete Order'),
+            child: Text(context.l10n.cartCompleteOrder),
           ),
         ),
       ),

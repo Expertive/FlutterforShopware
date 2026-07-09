@@ -6,6 +6,7 @@ import '../core/models/product.dart';
 import '../core/services/shopware_api.dart';
 import '../widgets/product_card.dart';
 import '../core/config/app_config.dart';
+import '../core/utils/l10n_extension.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -20,7 +21,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   List<Product> _products = [];
   bool _isLoading = false;
-  String? _error;
+  bool _hasSearchError = false;
   String _lastSearchQuery = '';
   late Color _primaryColor;
   int _searchRequestId = 0;
@@ -75,7 +76,7 @@ class _SearchScreenState extends State<SearchScreen> {
       if (!mounted) return;
       setState(() {
         _products = [];
-        _error = null;
+        _hasSearchError = false;
       });
       return;
     }
@@ -86,7 +87,7 @@ class _SearchScreenState extends State<SearchScreen> {
       if (!mounted) return;
       setState(() {
         _isLoading = true;
-        _error = null;
+        _hasSearchError = false;
       });
 
       final products = await _api.searchProducts(
@@ -103,7 +104,7 @@ class _SearchScreenState extends State<SearchScreen> {
     } catch (e) {
       if (!mounted || requestId != _searchRequestId) return;
       setState(() {
-        _error = 'An error occurred during search. Please try again.';
+        _hasSearchError = true;
         _isLoading = false;
       });
     }
@@ -113,7 +114,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Search'),
+        title: Text(context.l10n.searchTitle),
         centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: ColorUtils.foregroundOn(_primaryColor),
@@ -138,7 +139,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'Search products...',
+                    hintText: context.l10n.searchHint,
                     prefixIcon: const Icon(Icons.search),
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(
@@ -147,7 +148,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               _searchController.clear();
                               setState(() {
                                 _products = [];
-                                _error = null;
+                                _hasSearchError = false;
                               });
                             },
                           )
@@ -173,28 +174,28 @@ class _SearchScreenState extends State<SearchScreen> {
 
           // Results
           Expanded(
-            child: _buildResults(),
+            child: _buildResults(context),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildResults() {
+  Widget _buildResults(BuildContext context) {
     if (_isLoading) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Searching...'),
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(context.l10n.searchSearching),
           ],
         ),
       );
     }
 
-    if (_error != null) {
+    if (_hasSearchError) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -206,14 +207,14 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              _error ?? 'An error occurred during search.',
+              context.l10n.searchError,
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.red),
             ),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () => _performSearch(_lastSearchQuery),
-              child: const Text('Try Again'),
+              child: Text(context.l10n.commonTryAgain),
             ),
           ],
         ),
@@ -221,27 +222,27 @@ class _SearchScreenState extends State<SearchScreen> {
     }
 
     if (_products.isEmpty && _lastSearchQuery.isNotEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.search_off,
               size: 64,
               color: Colors.grey,
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text(
-              'No search results found',
-              style: TextStyle(
+              context.l10n.searchNoResults,
+              style: const TextStyle(
                 fontSize: 18,
                 color: Colors.grey,
               ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
-              'Try different keywords',
-              style: TextStyle(
+              context.l10n.searchTryDifferent,
+              style: const TextStyle(
                 fontSize: 14,
                 color: Colors.grey,
               ),
@@ -252,20 +253,20 @@ class _SearchScreenState extends State<SearchScreen> {
     }
 
     if (_products.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.search,
               size: 64,
               color: Colors.grey,
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text(
-              'Use the search box above to search for products',
+              context.l10n.searchPrompt,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 16,
                 color: Colors.grey,
               ),
@@ -282,7 +283,10 @@ class _SearchScreenState extends State<SearchScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Text(
-            '"$_lastSearchQuery" for ${_products.length} results found',
+            context.l10n.searchResultsCount(
+              _lastSearchQuery,
+              _products.length,
+            ),
             style: const TextStyle(
               fontSize: 14,
               color: Colors.grey,

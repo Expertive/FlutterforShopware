@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../data/repositories/auth_repository.dart';
 import '../core/services/shopware_api.dart';
 import '../core/config/app_config.dart';
+import '../core/utils/l10n_extension.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -97,7 +98,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registration Successful')),
+          SnackBar(content: Text(context.l10n.registerSuccessful)),
         );
         context.go('/');
       }
@@ -122,7 +123,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => _handleBack(context),
         ),
-        title: const Text('Register New Account'),
+        title: Text(context.l10n.registerTitle),
         centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: ColorUtils.foregroundOn(_primaryColor),
@@ -141,47 +142,59 @@ class _RegisterScreenState extends State<RegisterScreen> {
             children: [
               TextFormField(
                 controller: _emailController,
-                decoration: const InputDecoration(labelText: 'Email Address'),
+                decoration:
+                    InputDecoration(labelText: context.l10n.registerEmailAddress),
                 keyboardType: TextInputType.emailAddress,
-                validator: (v) =>
-                    (v == null || v.isEmpty) ? 'Email address required' : null,
+                validator: (v) => (v == null || v.isEmpty)
+                    ? context.l10n.registerEmailRequired
+                    : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _passwordController,
-                decoration: const InputDecoration(labelText: 'New Password'),
+                decoration:
+                    InputDecoration(labelText: context.l10n.registerNewPassword),
                 obscureText: true,
-                validator: (v) =>
-                    (v == null || v.isEmpty) ? 'New password required' : null,
+                validator: (v) => (v == null || v.isEmpty)
+                    ? context.l10n.registerPasswordRequired
+                    : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _firstNameController,
-                decoration:
-                    const InputDecoration(labelText: 'First Name (Optional) '),
-                validator: (v) =>
-                    (v == null || v.isEmpty) ? 'First name required' : null,
+                decoration: InputDecoration(
+                  labelText: context.l10n.registerFirstNameOptional,
+                ),
+                validator: (v) => (v == null || v.isEmpty)
+                    ? context.l10n.registerFirstNameRequired
+                    : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _lastNameController,
-                decoration: const InputDecoration(labelText: 'Last Name'),
-                validator: (v) =>
-                    (v == null || v.isEmpty) ? 'Last name required' : null,
+                decoration:
+                    InputDecoration(labelText: context.l10n.registerLastName),
+                validator: (v) => (v == null || v.isEmpty)
+                    ? context.l10n.registerLastNameRequired
+                    : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _salutationIdController,
-                decoration: const InputDecoration(labelText: 'Salutation ID'),
-                validator: (v) =>
-                    (v == null || v.isEmpty) ? 'Salutation ID required' : null,
+                decoration:
+                    InputDecoration(labelText: context.l10n.registerSalutationId),
+                validator: (v) => (v == null || v.isEmpty)
+                    ? context.l10n.registerSalutationRequired
+                    : null,
               ),
               const SizedBox(height: 16),
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8.0),
-                  child:
-                      Text(_error!, style: const TextStyle(color: Colors.red)),
+                  child: Text(
+                    context.l10n.commonError(_error!),
+                    style: const TextStyle(color: Colors.red),
+                  ),
                 ),
               SizedBox(
                 width: double.infinity,
@@ -192,7 +205,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           width: 18,
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text('Register'),
+                      : Text(context.l10n.commonRegister),
                 ),
               ),
             ],

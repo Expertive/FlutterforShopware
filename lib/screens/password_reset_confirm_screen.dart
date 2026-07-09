@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../data/repositories/auth_repository.dart';
 import '../core/config/app_config.dart';
 import '../core/services/shopware_api.dart';
+import '../core/utils/l10n_extension.dart';
 
 class PasswordResetConfirmScreen extends StatefulWidget {
   final String hash;
@@ -104,7 +105,7 @@ class _PasswordResetConfirmScreenState
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: Text(context.l10n.commonError(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -120,16 +121,16 @@ class _PasswordResetConfirmScreenState
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Set New Password'),
+        title: Text(context.l10n.passwordConfirmTitle),
         centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: ColorUtils.foregroundOn(_primaryColor),
       ),
-      body: _success ? _buildSuccessView() : _buildFormView(),
+      body: _success ? _buildSuccessView(context) : _buildFormView(context),
     );
   }
 
-  Widget _buildFormView() {
+  Widget _buildFormView(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Form(
@@ -144,9 +145,9 @@ class _PasswordResetConfirmScreenState
               color: _primaryColor,
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Set New Password',
-              style: TextStyle(
+            Text(
+              context.l10n.passwordConfirmTitle,
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
@@ -154,7 +155,7 @@ class _PasswordResetConfirmScreenState
             ),
             const SizedBox(height: 8),
             Text(
-              'Select a secure password. It must be at least 8 characters long.',
+              context.l10n.passwordConfirmInstructions,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
@@ -166,7 +167,7 @@ class _PasswordResetConfirmScreenState
               controller: _passwordController,
               obscureText: _obscurePassword,
               decoration: InputDecoration(
-                labelText: 'New Password',
+                labelText: context.l10n.accountNewPassword,
                 prefixIcon: const Icon(Icons.lock),
                 suffixIcon: IconButton(
                   icon: Icon(
@@ -181,10 +182,10 @@ class _PasswordResetConfirmScreenState
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Please enter your password';
+                  return context.l10n.passwordConfirmRequired;
                 }
                 if (value.length < 8) {
-                  return 'Password must be at least 8 characters long';
+                  return context.l10n.passwordConfirmMinLength;
                 }
                 return null;
               },
@@ -194,7 +195,7 @@ class _PasswordResetConfirmScreenState
               controller: _passwordConfirmController,
               obscureText: _obscurePasswordConfirm,
               decoration: InputDecoration(
-                labelText: 'New Password (Confirm)',
+                labelText: context.l10n.passwordConfirmNewPasswordConfirm,
                 prefixIcon: const Icon(Icons.lock),
                 suffixIcon: IconButton(
                   icon: Icon(
@@ -211,10 +212,10 @@ class _PasswordResetConfirmScreenState
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Please enter your password again';
+                  return context.l10n.passwordConfirmAgainRequired;
                 }
                 if (value != _passwordController.text) {
-                  return 'Passwords do not match';
+                  return context.l10n.passwordConfirmMismatch;
                 }
                 return null;
               },
@@ -236,7 +237,7 @@ class _PasswordResetConfirmScreenState
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                  : const Text('Update Password'),
+                  : Text(context.l10n.passwordConfirmUpdate),
             ),
           ],
         ),
@@ -244,29 +245,29 @@ class _PasswordResetConfirmScreenState
     );
   }
 
-  Widget _buildSuccessView() {
+  Widget _buildSuccessView(BuildContext context) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.check_circle,
               size: 80,
               color: Colors.green,
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Password Updated Successfully',
-              style: TextStyle(
+            Text(
+              context.l10n.passwordConfirmSuccessTitle,
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 16),
             Text(
-              'You can now login with your new password.',
+              context.l10n.passwordConfirmSuccessBody,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
@@ -282,7 +283,7 @@ class _PasswordResetConfirmScreenState
                 padding:
                     const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               ),
-              child: const Text('Login'),
+              child: Text(context.l10n.commonLogin),
             ),
           ],
         ),

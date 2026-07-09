@@ -5,11 +5,14 @@ import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/models/product.dart';
+import '../core/models/sales_channel_info.dart';
 import '../core/services/shopware_api.dart';
 import '../data/repositories/cart_repository.dart';
 import '../data/repositories/auth_repository.dart';
 import '../core/config/app_config.dart';
 import '../core/api_client.dart';
+import '../widgets/app_bar_brand_title.dart';
+import '../core/utils/l10n_extension.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
@@ -35,6 +38,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   bool _isLoading = true;
   String? _error;
   late Color _primaryColor;
+  SalesChannelInfo? _salesChannelInfo;
+  String? _appLogoUrl;
 
   void _handleBack(BuildContext context) {
     if (context.canPop()) {
@@ -50,7 +55,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     // Start default color
     _primaryColor = _hexToColor(AppConfig.primaryColorHex);
     _loadPrimaryColor();
+    _loadSalesChannelInfo();
     _loadProduct();
+  }
+
+  Future<void> _loadSalesChannelInfo() async {
+    try {
+      final contextData = await _api.getSalesChannelContext();
+      final info = SalesChannelInfo.fromContext(contextData);
+      if (mounted) {
+        setState(() => _salesChannelInfo = info);
+      }
+    } catch (_) {
+      // Falls back to AppConfig.appName in AppBar title
+    }
   }
 
   Future<void> _loadPrimaryColor() async {
@@ -58,9 +76,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       final config = await _api.getFlutterConfig();
       final primaryColorStr =
           config['primaryColor'] as String? ?? AppConfig.primaryColorHex;
+      final logoUrl = config['logoUrl'] as String?;
       if (mounted) {
         setState(() {
           _primaryColor = _hexToColor(primaryColorStr);
+          _appLogoUrl = logoUrl;
         });
       }
     } catch (e) {
@@ -186,7 +206,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Variant not found: $e')),
+            SnackBar(
+              content: Text(
+                context.l10n.productVariantNotFound(e.toString()),
+              ),
+            ),
           );
         }
       }
@@ -198,10 +222,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return Scaffold(
       extendBodyBehindAppBar: false,
       appBar: AppBar(
-        title: Text(
-          AppConfig.appName,
-          style: const TextStyle(fontSize: 18),
-          overflow: TextOverflow.ellipsis,
+        title: AppBarBrandTitle(
+          configLogoUrl: _appLogoUrl,
+          salesChannelLogoUrl: _salesChannelInfo?.logoUrl,
+          foregroundColor: ColorUtils.foregroundOn(_primaryColor),
         ),
         centerTitle: true,
         backgroundColor: _primaryColor,
@@ -217,20 +241,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
         ],
       ),
-      body: _buildBody(),
-      bottomNavigationBar: _buildBottomBar(),
+      body: _buildBody(context),
+      bottomNavigationBar: _buildBottomBar(context),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(BuildContext context) {
     if (_isLoading) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Loading product information...'),
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(context.l10n.productLoading),
           ],
         ),
       );
@@ -248,14 +272,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Error: $_error',
+              context.l10n.commonError(_error!),
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.red),
             ),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _loadProduct,
-              child: const Text('Try Again'),
+              child: Text(context.l10n.commonTryAgain),
             ),
           ],
         ),
@@ -263,8 +287,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
 
     if (_product == null) {
-      return const Center(
-        child: Text('Product not found'),
+      return Center(
+        child: Text(context.l10n.productNotFound),
       );
     }
 
@@ -351,15 +375,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 ),
                               ],
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.close,
+                                const Icon(Icons.close,
                                     color: Colors.white, size: 16),
-                                SizedBox(width: 4),
+                                const SizedBox(width: 4),
                                 Text(
-                                  'Out of Stock',
-                                  style: TextStyle(
+                                  context.l10n.productOutOfStock,
+                                  style: const TextStyle(
                                     fontSize: 12,
                                     color: Colors.white,
                                     fontWeight: FontWeight.w600,
@@ -456,7 +480,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            _getStockStatusText(_product!.availableStock),
+                            _getStockStatusText(
+                              context,
+                              _product!.availableStock,
+                            ),
                             style: TextStyle(
                               color: _getStockColor(_product!.availableStock),
                               fontWeight: FontWeight.w600,
@@ -474,7 +501,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 // Variant Selection
                 if (_configurator.isNotEmpty) ...[
                   Text(
-                    'Variant Selection',
+                    context.l10n.productVariantSelection,
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
@@ -483,14 +510,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  ..._configurator.map((group) => _buildVariantGroup(group)),
+                  ..._configurator.map(
+                    (group) => _buildVariantGroup(context, group),
+                  ),
                   const SizedBox(height: 24),
                 ],
 
                 // Description - Modern Card
                 if (_product!.description.isNotEmpty) ...[
                   Text(
-                    'Product Description',
+                    context.l10n.productDescription,
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
@@ -526,7 +555,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 // Categories - Modern Chips
                 if (_product!.categories.isNotEmpty) ...[
                   Text(
-                    'Categories',
+                    context.l10n.productCategories,
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
@@ -577,13 +606,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
           // Cross-Selling Bölümü
           const SizedBox(height: 24),
-          _buildCrossSelling(),
+          _buildCrossSelling(context),
         ],
       ),
     );
   }
 
-  Widget _buildCrossSelling() {
+  Widget _buildCrossSelling(BuildContext context) {
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: _api.getCrossSelling(widget.productId),
       builder: (context, snapshot) {
@@ -611,9 +640,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Related Products',
-              style: TextStyle(
+            Text(
+              context.l10n.productRelated,
+              style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
@@ -723,9 +752,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _buildVariantGroup(Map<String, dynamic> group) {
+  Widget _buildVariantGroup(BuildContext context, Map<String, dynamic> group) {
     final groupId = group['id']?.toString() ?? '';
-    final groupName = group['name']?.toString() ?? 'Seçenek';
+    final groupName =
+        group['name']?.toString() ?? context.l10n.productOption;
     final options = group['options'] as List? ?? [];
     final selectedOptionId = _selectedOptions[groupId];
 
@@ -805,7 +835,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _buildBottomBar() {
+  Widget _buildBottomBar(BuildContext context) {
     if (_product == null || !_product!.available) {
       return const SizedBox.shrink();
     }
@@ -847,7 +877,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('${_product!.name} added to cart'),
+                            content: Text(
+                              context.l10n.productAddedToCart(_product!.name),
+                            ),
                             backgroundColor: Colors.green,
                             behavior: SnackBarBehavior.floating,
                             shape: RoundedRectangleBorder(
@@ -860,7 +892,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Error: $e'),
+                            content: Text(
+                              context.l10n.commonError(e.toString()),
+                            ),
                             behavior: SnackBarBehavior.floating,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -871,7 +905,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     }
                   },
                   icon: const Icon(Icons.shopping_cart_outlined, size: 20),
-                  label: const Text('Add to Cart'),
+                  label: Text(context.l10n.productAddToCart),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: theme.colorScheme.primary,
                     foregroundColor: ColorUtils.foregroundOn(_primaryColor),
@@ -936,19 +970,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   /// Return text based on stock status
-  String _getStockStatusText(int? availableStock) {
+  String _getStockStatusText(BuildContext context, int? availableStock) {
     if (availableStock == null) {
-      return 'In Stock';
+      return context.l10n.productInStock;
     }
 
     if (availableStock < 0) {
-      return 'Out of Stock';
+      return context.l10n.productOutOfStock;
     } else if (availableStock == 0) {
-      return 'Out of Stock';
+      return context.l10n.productOutOfStock;
     } else if (availableStock == 1) {
-      return 'Last 1 Item';
+      return context.l10n.productLastOne;
     } else {
-      return 'In Stock';
+      return context.l10n.productInStock;
     }
   }
 }

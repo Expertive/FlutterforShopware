@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../data/repositories/address_repository.dart';
 import '../core/config/app_config.dart';
+import '../core/utils/l10n_extension.dart';
 
 class AddressListScreen extends StatefulWidget {
   const AddressListScreen({super.key});
@@ -72,7 +73,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => _handleBack(context),
         ),
-        title: const Text('My Addresses'),
+        title: Text(context.l10n.addressListTitle),
         centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: ColorUtils.foregroundOn(_primaryColor),
@@ -85,22 +86,25 @@ class _AddressListScreenState extends State<AddressListScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          final created = await context.push<Map<String, dynamic>?>('/address/edit');
+          final created =
+              await context.push<Map<String, dynamic>?>('/address/edit');
           if (created != null) {
             await _load();
           }
         },
         child: const Icon(Icons.add),
       ),
-      body: _buildBody(),
+      body: _buildBody(context),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator());
-    if (_error != null) return Center(child: Text('Error: $_error'));
+    if (_error != null) {
+      return Center(child: Text(context.l10n.commonError(_error!)));
+    }
     if (_addresses.isEmpty) {
-      return const Center(child: Text('No saved addresses.'));
+      return Center(child: Text(context.l10n.addressListEmpty));
     }
     return ListView.separated(
       itemCount: _addresses.length,
@@ -108,38 +112,60 @@ class _AddressListScreenState extends State<AddressListScreen> {
       itemBuilder: (context, index) {
         final addr = _addresses[index];
         final id = addr['id']?.toString() ?? '';
-        final name = '${addr['firstName'] ?? ''} ${addr['lastName'] ?? ''}'.trim();
+        final name =
+            '${addr['firstName'] ?? ''} ${addr['lastName'] ?? ''}'.trim();
         final street = addr['street']?.toString() ?? '';
         final city = addr['city']?.toString() ?? '';
         final zipcode = addr['zipcode']?.toString() ?? '';
         return ListTile(
-          title: Text(name.isEmpty ? 'Address' : name),
+          title: Text(name.isEmpty ? context.l10n.addressFallback : name),
           subtitle: Text('$street, $zipcode $city'),
           trailing: PopupMenuButton<String>(
             onSelected: (value) async {
               try {
                 if (value == 'edit') {
-                  final updated = await context.push<Map<String, dynamic>?>('/address/edit', extra: addr);
+                  final updated = await context.push<Map<String, dynamic>?>(
+                    '/address/edit',
+                    extra: addr,
+                  );
                   if (updated != null) await _load();
                 } else if (value == 'del') {
                   await _repo.deleteAddress(id);
                   await _load();
                 } else if (value == 'default_shipping') {
                   await _repo.setDefaultShipping(id);
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Default shipping address assigned')));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(context.l10n.addressDefaultShipping)),
+                  );
                 } else if (value == 'default_billing') {
                   await _repo.setDefaultBilling(id);
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Default billing address assigned')));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(context.l10n.addressDefaultBilling)),
+                  );
                 }
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(context.l10n.commonError(e.toString()))),
+                );
               }
             },
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: 'edit', child: Text('Edit')),
-              PopupMenuItem(value: 'default_shipping', child: Text('Set as Default Shipping')),
-              PopupMenuItem(value: 'default_billing', child: Text('Set as Default Billing')),
-              PopupMenuItem(value: 'del', child: Text('Delete')),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'edit',
+                child: Text(context.l10n.addressEdit),
+              ),
+              PopupMenuItem(
+                value: 'default_shipping',
+                child: Text(context.l10n.addressSetDefaultShipping),
+              ),
+              PopupMenuItem(
+                value: 'default_billing',
+                child: Text(context.l10n.addressSetDefaultBilling),
+              ),
+              PopupMenuItem(
+                value: 'del',
+                child: Text(context.l10n.addressDelete),
+              ),
             ],
           ),
         );
@@ -147,5 +173,3 @@ class _AddressListScreenState extends State<AddressListScreen> {
     );
   }
 }
-
-

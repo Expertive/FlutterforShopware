@@ -8,6 +8,9 @@ class TokenStorage {
   static final TokenStorage instance = TokenStorage._internal();
 
   static const String _swContextTokenKey = 'sw-context-token';
+  static const String _languageIdKey = 'sw-language-id';
+  static const String _currencyIdKey = 'sw-currency-id';
+  static const String _localeTagKey = 'app-locale-tag';
   static const String _flutterConfigKey = 'flutter-app-config';
   static const String _flutterConfigTimestampKey =
       'flutter-app-config-timestamp';
@@ -41,9 +44,47 @@ class TokenStorage {
     return prefs.getString(_swContextTokenKey);
   }
 
+  Future<void> clearContextToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_swContextTokenKey);
+  }
+
+  Future<void> saveLanguageId(String languageId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_languageIdKey, languageId);
+  }
+
+  Future<String?> loadLanguageId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_languageIdKey);
+  }
+
+  Future<void> saveCurrencyId(String currencyId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_currencyIdKey, currencyId);
+  }
+
+  Future<String?> loadCurrencyId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_currencyIdKey);
+  }
+
+  Future<void> saveLocaleTag(String tag) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_localeTagKey, tag);
+  }
+
+  Future<String?> loadLocaleTag() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_localeTagKey);
+  }
+
   Future<void> clear() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_swContextTokenKey);
+    await prefs.remove(_languageIdKey);
+    await prefs.remove(_currencyIdKey);
+    await prefs.remove(_localeTagKey);
   }
 
   Future<bool> getCookieConsent() async {

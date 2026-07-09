@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:go_router/go_router.dart';
+
+import 'l10n/app_localizations.dart';
+import 'core/locale/locale_notifier.dart';
 
 import 'screens/home_screen.dart';
 import 'screens/category_screen.dart';
@@ -27,6 +31,7 @@ import 'screens/storefront_webview_screen.dart';
 import 'core/services/shopware_api.dart';
 import 'core/config/app_config.dart';
 import 'core/utils/color_utils.dart';
+import 'core/utils/l10n_extension.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -67,29 +72,39 @@ class BootstrapErrorApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: AppConfig.appName,
-      home: Scaffold(
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.lock_outline, size: 64, color: Colors.grey[400]),
-                const SizedBox(height: 24),
-                const Text(
-                  'Unable to connect',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'The app could not authenticate with the store. '
-                  'Please verify the sales channel ID, app secret, and that '
-                  'the mobile app is enabled in Shopware admin.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 15, color: Colors.grey[700]),
-                ),
-              ],
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Builder(
+        builder: (context) => Scaffold(
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.lock_outline, size: 64, color: Colors.grey[400]),
+                  const SizedBox(height: 24),
+                  Text(
+                    context.l10n.bootstrapErrorTitle,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    context.l10n.bootstrapErrorBody,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 15, color: Colors.grey[700]),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -98,17 +113,26 @@ class BootstrapErrorApp extends StatelessWidget {
   }
 }
 
-class FlutterShopApp extends StatelessWidget {
+class FlutterShopApp extends ConsumerWidget {
   const FlutterShopApp({super.key});
 
   Color _hexToColor(String hex) => ColorUtils.hexToColor(hex);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final primaryColor = _hexToColor(AppConfig.primaryColorHex);
+    final locale = ref.watch(localeProvider);
 
     return MaterialApp.router(
       title: AppConfig.appName,
+      locale: locale,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
@@ -254,8 +278,12 @@ final _router = GoRouter(
       builder: (context, state) {
         final url = state.uri.queryParameters['url'];
         if (url == null || url.isEmpty) {
-          return const Scaffold(
-            body: Center(child: Text('URL is required')),
+          return Scaffold(
+            body: Builder(
+              builder: (context) => Center(
+                child: Text(context.l10n.urlRequired),
+              ),
+            ),
           );
         }
         return StorefrontWebViewScreen(

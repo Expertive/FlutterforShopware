@@ -7,6 +7,7 @@ import '../core/services/shopware_api.dart';
 import '../core/config/app_config.dart';
 import '../core/utils/storefront_url.dart';
 import '../core/utils/storefront_navigation.dart';
+import '../core/utils/l10n_extension.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -91,7 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Login successful')),
+          SnackBar(content: Text(context.l10n.loginSuccessful)),
         );
         // Redirect to home using GoRouter
         // ignore: use_build_context_synchronously
@@ -118,7 +119,7 @@ class _LoginScreenState extends State<LoginScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => _handleBack(context),
         ),
-        title: const Text('Customer Login'),
+        title: Text(context.l10n.loginTitle),
         centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: ColorUtils.foregroundOn(_primaryColor),
@@ -138,22 +139,24 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               TextFormField(
                 controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
+                decoration: InputDecoration(
+                  labelText: context.l10n.commonEmail,
                 ),
                 keyboardType: TextInputType.emailAddress,
-                validator: (v) =>
-                    (v == null || v.isEmpty) ? 'Email required' : null,
+                validator: (v) => (v == null || v.isEmpty)
+                    ? context.l10n.loginEmailRequired
+                    : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _passwordController,
-                decoration: const InputDecoration(
-                  labelText: 'Password',
+                decoration: InputDecoration(
+                  labelText: context.l10n.commonPassword,
                 ),
                 obscureText: true,
-                validator: (v) =>
-                    (v == null || v.isEmpty) ? 'Password required' : null,
+                validator: (v) => (v == null || v.isEmpty)
+                    ? context.l10n.loginPasswordRequired
+                    : null,
               ),
               const SizedBox(height: 8),
               Align(
@@ -163,10 +166,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     StorefrontNavigation.open(
                       context,
                       StorefrontUrl.accountRecover(),
-                      title: 'Password Recovery',
+                      title: context.l10n.passwordRecovery,
                     );
                   },
-                  child: const Text('Forgot Password'),
+                  child: Text(context.l10n.loginForgotPassword),
                 ),
               ),
               const SizedBox(height: 16),
@@ -174,7 +177,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8.0),
                   child: Text(
-                    _error!,
+                    context.l10n.commonError(_error!),
                     style: const TextStyle(color: Colors.red),
                   ),
                 ),
@@ -188,7 +191,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Login'),
+                      : Text(context.l10n.commonLogin),
                 ),
               ),
             ],

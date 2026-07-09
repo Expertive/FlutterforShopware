@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../data/repositories/auth_repository.dart';
 import '../core/config/app_config.dart';
 import '../core/services/shopware_api.dart';
+import '../core/utils/l10n_extension.dart';
 
 class PasswordResetRequestScreen extends StatefulWidget {
   const PasswordResetRequestScreen({super.key});
@@ -93,7 +94,7 @@ class _PasswordResetRequestScreenState
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: Text(context.l10n.commonError(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -109,16 +110,16 @@ class _PasswordResetRequestScreenState
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Password Reset'),
+        title: Text(context.l10n.passwordResetTitle),
         centerTitle: true,
         backgroundColor: _primaryColor,
         foregroundColor: ColorUtils.foregroundOn(_primaryColor),
       ),
-      body: _success ? _buildSuccessView() : _buildFormView(),
+      body: _success ? _buildSuccessView(context) : _buildFormView(context),
     );
   }
 
-  Widget _buildFormView() {
+  Widget _buildFormView(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Form(
@@ -133,9 +134,9 @@ class _PasswordResetRequestScreenState
               color: _primaryColor,
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Did you forget your password?',
-              style: TextStyle(
+            Text(
+              context.l10n.passwordResetHeading,
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
@@ -143,7 +144,7 @@ class _PasswordResetRequestScreenState
             ),
             const SizedBox(height: 8),
             Text(
-              'Enter your email address, we will send you a password reset link.',
+              context.l10n.passwordResetInstructions,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
@@ -154,17 +155,17 @@ class _PasswordResetRequestScreenState
             TextFormField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Email',
+              decoration: InputDecoration(
+                labelText: context.l10n.commonEmail,
                 hintText: 'example@email.com',
-                prefixIcon: Icon(Icons.email),
+                prefixIcon: const Icon(Icons.email),
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Please enter your email address';
+                  return context.l10n.contactEmailRequired;
                 }
                 if (!value.contains('@')) {
-                  return 'Please enter a valid email address';
+                  return context.l10n.contactEmailInvalid;
                 }
                 return null;
               },
@@ -186,7 +187,7 @@ class _PasswordResetRequestScreenState
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                  : const Text('Send Password Reset Link'),
+                  : Text(context.l10n.passwordResetSendLink),
             ),
           ],
         ),
@@ -194,29 +195,31 @@ class _PasswordResetRequestScreenState
     );
   }
 
-  Widget _buildSuccessView() {
+  Widget _buildSuccessView(BuildContext context) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.check_circle,
               size: 80,
               color: Colors.green,
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Email Sent',
-              style: TextStyle(
+            Text(
+              context.l10n.passwordResetEmailSent,
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 16),
             Text(
-              '${_emailController.text.trim()} address. Please check your email.',
+              context.l10n.passwordResetCheckEmail(
+                _emailController.text.trim(),
+              ),
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
@@ -232,7 +235,7 @@ class _PasswordResetRequestScreenState
                 padding:
                     const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               ),
-              child: const Text('Return to Login Page'),
+              child: Text(context.l10n.passwordResetReturnLogin),
             ),
           ],
         ),

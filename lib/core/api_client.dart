@@ -36,6 +36,16 @@ class ApiClient {
             options.headers['sw-context-token'] = token;
           }
 
+          final languageId = await TokenStorage.instance.loadLanguageId();
+          if (languageId != null && languageId.isNotEmpty) {
+            options.headers['sw-language-id'] = languageId;
+          }
+
+          final currencyId = await TokenStorage.instance.loadCurrencyId();
+          if (currencyId != null && currencyId.isNotEmpty) {
+            options.headers['sw-currency-id'] = currencyId;
+          }
+
           // Ensure sw-access-key header is always present (use current value from AppConfig)
           // Only add if access key is not empty (will be loaded from backend config)
           if (AppConfig.salesChannelAccessKey.isNotEmpty) {
