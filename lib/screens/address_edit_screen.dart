@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/utils/color_utils.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/repositories/address_repository.dart';
@@ -121,6 +122,7 @@ class _AddressEditScreenState extends State<AddressEditScreen> {
         _api.getSalutations(),
         _api.getCountries(),
       ]);
+      if (!mounted) return;
       setState(() {
         _salutations = results[0];
         _countries = results[1];
@@ -164,7 +166,7 @@ class _AddressEditScreenState extends State<AddressEditScreen> {
         title: Text(editing ? 'Edit Address' : 'New Address'),
         centerTitle: true,
         backgroundColor: _primaryColor,
-        foregroundColor: Colors.white,
+        foregroundColor: ColorUtils.foregroundOn(_primaryColor),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

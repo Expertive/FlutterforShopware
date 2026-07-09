@@ -1,4 +1,6 @@
 import 'dart:convert';
+
+import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class TokenStorage {
@@ -16,6 +18,22 @@ class TokenStorage {
   Future<void> saveContextToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_swContextTokenKey, token);
+  }
+
+  Future<void> saveContextTokenFromResponse(Response<dynamic> response) async {
+    final fromHeader = response.headers.value('sw-context-token');
+    if (fromHeader != null && fromHeader.isNotEmpty) {
+      await saveContextToken(fromHeader);
+      return;
+    }
+
+    final data = response.data;
+    if (data is Map) {
+      final token = data['token'] ?? data['contextToken'];
+      if (token is String && token.isNotEmpty) {
+        await saveContextToken(token);
+      }
+    }
   }
 
   Future<String?> loadContextToken() async {

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../core/api_client.dart';
 import '../../core/storage.dart';
+import '../../core/services/storefront_session_service.dart';
 
 class AuthRepository {
   final Dio _dio = ApiClient.instance.dio;
@@ -22,18 +23,21 @@ class AuthRepository {
       final tokenFromHeader = response.headers.value('sw-context-token');
       if (tokenFromHeader != null && tokenFromHeader.isNotEmpty) {
         await TokenStorage.instance.saveContextToken(tokenFromHeader);
-        return;
+      } else {
+        // Fallback: some setups return token in response body
+        final body = response.data;
+        if (body is Map && body['contextToken'] is String) {
+          await TokenStorage.instance
+              .saveContextToken(body['contextToken'] as String);
+        } else {
+          throw StateError('Context token not found after login');
+        }
       }
 
-      // Fallback: some setups return token in response body
-      final body = response.data;
-      if (body is Map && body['contextToken'] is String) {
-        await TokenStorage.instance
-            .saveContextToken(body['contextToken'] as String);
-        return;
-      }
-
-      throw StateError('Context token not found after login');
+      await StorefrontSessionService.instance.syncLogin(
+        email: email,
+        password: password,
+      );
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
         throw Exception('Email or password is incorrect.');
@@ -50,6 +54,7 @@ class AuthRepository {
     try {
       await _dio.post('/store-api/account/logout');
     } finally {
+      await StorefrontSessionService.instance.clearSession();
       await TokenStorage.instance.clear();
     }
   }
@@ -77,6 +82,11 @@ class AuthRepository {
     if (tokenFromHeader != null && tokenFromHeader.isNotEmpty) {
       await TokenStorage.instance.saveContextToken(tokenFromHeader);
     }
+
+    await StorefrontSessionService.instance.syncLogin(
+      email: email,
+      password: password,
+    );
   }
 
   Future<void> requestPasswordRecovery({required String email}) async {
@@ -102,6 +112,15 @@ class AuthRepository {
       return resp.data as Map<String, dynamic>;
     }
     return {'data': resp.data};
+  }
+
+  Future<bool> isLoggedIn() async {
+    try {
+      await me();
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<void> changeProfile({

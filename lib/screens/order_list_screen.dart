@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import '../core/utils/color_utils.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../data/repositories/orders_repository.dart';
 import '../core/config/app_config.dart';
+import '../core/utils/storefront_url.dart';
+import '../core/utils/storefront_navigation.dart';
 import '../core/services/shopware_api.dart';
 
 class OrderListScreen extends StatefulWidget {
@@ -142,7 +144,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
         title: const Text('My Orders'),
         centerTitle: true,
         backgroundColor: _primaryColor,
-        foregroundColor: Colors.white,
+        foregroundColor: ColorUtils.foregroundOn(_primaryColor),
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
@@ -155,37 +157,12 @@ class _OrderListScreenState extends State<OrderListScreen> {
     );
   }
 
-  String _storefrontBaseUrl() {
-    var base = AppConfig.baseUrl.trim();
-    if (base.endsWith('/store-api')) {
-      base = base.substring(0, base.length - '/store-api'.length);
-    }
-    base = base.replaceAll(RegExp(r'/+$'), '');
-    return '$base/';
-  }
-
   Future<void> _openOrderList() async {
-    try {
-      final baseUrl = _storefrontBaseUrl();
-      final orderListUrl = '${baseUrl}account/order';
-      final uri = Uri.parse(orderListUrl);
-
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Could not open order list')),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
-    }
+    await StorefrontNavigation.open(
+      context,
+      StorefrontUrl.accountOrders(),
+      title: 'Orders',
+    );
   }
 
   Widget _buildBottomBar() {
@@ -200,7 +177,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
             label: const Text('View Order List'),
             style: ElevatedButton.styleFrom(
               backgroundColor: _primaryColor,
-              foregroundColor: Colors.white,
+              foregroundColor: ColorUtils.foregroundOn(_primaryColor),
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
           ),

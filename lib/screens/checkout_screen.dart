@@ -1,9 +1,11 @@
 import 'package:dio/dio.dart';
+import '../core/utils/color_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../core/config/app_config.dart';
+import '../core/utils/storefront_url.dart';
+import '../core/utils/storefront_navigation.dart';
 import '../core/services/shopware_api.dart';
 import '../data/repositories/address_repository.dart';
 import '../data/repositories/cart_repository.dart';
@@ -82,6 +84,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Future<void> _load() async {
+    if (!mounted) return;
     setState(() {
       _loading = true;
       _error = null;
@@ -92,6 +95,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         _repo.getPaymentMethods(),
         AddressRepository().listAddresses(),
       ]);
+      if (!mounted) return;
       setState(() {
         _shippingMethods = res[0] as List<Map<String, dynamic>>;
         _paymentMethods = res[1] as List<Map<String, dynamic>>;
@@ -116,9 +120,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         shippingAddressId: _selectedShippingAddressId,
       );
     } catch (e) {
+      if (!mounted) return;
       setState(() => _error = e.toString());
     } finally {
-      setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -175,8 +182,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               backgroundColor: Colors.red,
             ));
           }
+          if (!mounted) return;
           setState(() => _placing = false);
-          return; // Exit method
+          return;
         }
       }
     }
@@ -197,6 +205,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ),
             );
           }
+          if (!mounted) return;
           setState(() => _placing = false);
           return;
         }
@@ -223,6 +232,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
       final identifiers = _repo.extractOrderIdentifiers(orderResp);
 
+      if (!mounted) return;
       setState(() {
         _orderResponse = orderResp;
         _orderIdentifiers = identifiers;
@@ -252,6 +262,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           errorUrl: _buildErrorUrl(),
         );
 
+        if (!mounted) return;
         setState(() {
           _paymentResponse = paymentResp.isEmpty ? null : paymentResp;
         });
@@ -330,7 +341,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         title: const Text('Checkout'),
         centerTitle: true,
         backgroundColor: _primaryColor,
-        foregroundColor: Colors.white,
+        foregroundColor: ColorUtils.foregroundOn(_primaryColor),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => _handleBack(context),
@@ -515,28 +526,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       return;
     }
 
-    try {
-      final baseUrl = _storefrontBaseUrl();
-      final orderId = _orderIdentifiers!.orderId!;
-      final paymentUrl = '${baseUrl}account/order/edit/$orderId';
-      final uri = Uri.parse(paymentUrl);
-
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Could not open payment page')),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
-    }
+    await StorefrontNavigation.open(
+      context,
+      StorefrontUrl.orderEdit(_orderIdentifiers!.orderId!),
+      title: 'Payment',
+    );
   }
 
   Widget _buildBottomBar() {
@@ -551,7 +545,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               onPressed: _completePayment,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
+                foregroundColor: ColorUtils.foregroundOn(_primaryColor),
               ),
               child: const Text('Complete Payment'),
             ),
@@ -570,7 +564,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             onPressed: _placing ? null : _placeOrder,
             style: ElevatedButton.styleFrom(
               backgroundColor: _primaryColor,
-              foregroundColor: Colors.white,
+              foregroundColor: ColorUtils.foregroundOn(_primaryColor),
             ),
             child: _placing
                 ? const SizedBox(
@@ -627,18 +621,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             content: Text('Redirecting to payment provider...'),
           ),
         );
-        final launched = await launchUrl(
-          uri,
-          mode: LaunchMode.externalApplication,
+        StorefrontNavigation.open(
+          context,
+          redirectUrl,
+          title: 'Payment',
         );
-        if (!launched) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Could not open browser: $redirectUrl'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -676,20 +663,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return 'Payment request sent successfully.';
   }
 
-  String _buildFinishUrl() {
-    return '${_storefrontBaseUrl()}checkout/finish';
-  }
+  String _buildFinishUrl() => '${StorefrontUrl.base()}checkout/finish';
 
-  String _buildErrorUrl() {
-    return '${_storefrontBaseUrl()}checkout/error';
-  }
-
-  String _storefrontBaseUrl() {
-    var base = AppConfig.baseUrl.trim();
-    if (base.endsWith('/store-api')) {
-      base = base.substring(0, base.length - '/store-api'.length);
-    }
-    base = base.replaceAll(RegExp(r'/+$'), '');
-    return '$base/';
-  }
+  String _buildErrorUrl() => '${StorefrontUrl.base()}checkout/error';
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/utils/color_utils.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/repositories/wishlist_repository.dart';
@@ -44,17 +45,22 @@ class _WishlistScreenState extends State<WishlistScreen> {
   }
 
   Future<void> _load() async {
+    if (!mounted) return;
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
       final list = await _repo.list();
+      if (!mounted) return;
       setState(() => _items = list);
     } catch (e) {
+      if (!mounted) return;
       setState(() => _error = e.toString());
     } finally {
-      setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -69,7 +75,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
         title: const Text('İstek Listem'),
         centerTitle: true,
         backgroundColor: _primaryColor,
-        foregroundColor: Colors.white,
+        foregroundColor: ColorUtils.foregroundOn(_primaryColor),
         actions: [
           IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
         ],

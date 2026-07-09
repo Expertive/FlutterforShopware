@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/utils/color_utils.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/services/shopware_api.dart';
@@ -69,8 +70,17 @@ class _CategoryScreenState extends State<CategoryScreen> {
     }
   }
 
+  @override
+  void didUpdateWidget(covariant CategoryScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.categoryId != widget.categoryId) {
+      _loadCategoryData();
+    }
+  }
+
   Future<void> _loadCategoryData() async {
     try {
+      if (!mounted) return;
       setState(() {
         _isLoading = true;
         _error = null;
@@ -78,31 +88,33 @@ class _CategoryScreenState extends State<CategoryScreen> {
 
       if (widget.categoryId != 'root') {
         final category = await _api.getCategory(widget.categoryId);
+        if (!mounted) return;
         setState(() {
           _categoryName = category.name;
         });
       } else {
+        if (!mounted) return;
         setState(() {
           _categoryName = 'Categories';
         });
       }
 
-      // Get subcategories
       final subcategories = await _api.getCategories(
         parentId: widget.categoryId == 'root' ? null : widget.categoryId,
       );
 
-      // Get products
       final products = await _api.getProducts(
         categoryId: widget.categoryId == 'root' ? null : widget.categoryId,
       );
 
+      if (!mounted) return;
       setState(() {
         _subcategories = subcategories;
         _products = products;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _isLoading = false;
@@ -130,7 +142,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
         title: Text(_categoryName ?? 'Categories'),
         centerTitle: true,
         backgroundColor: _primaryColor,
-        foregroundColor: Colors.white,
+        foregroundColor: ColorUtils.foregroundOn(_primaryColor),
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
@@ -235,7 +247,9 @@ class _CategoryScreenState extends State<CategoryScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: InkWell(
-                      onTap: () => context.go('/category/$id'),
+                      onTap: id.isEmpty
+                          ? null
+                          : () => context.push('/category/$id'),
                       borderRadius: BorderRadius.circular(12),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -308,7 +322,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                 crossAxisCount: 2,
                 mainAxisSpacing: 8.0,
                 crossAxisSpacing: 8.0,
-                childAspectRatio: 0.75,
+                childAspectRatio: 0.68,
               ),
               itemCount: _products.length,
               itemBuilder: (context, index) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/utils/color_utils.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/models/product.dart';
@@ -22,6 +23,7 @@ class _SearchScreenState extends State<SearchScreen> {
   String? _error;
   String _lastSearchQuery = '';
   late Color _primaryColor;
+  int _searchRequestId = 0;
 
   @override
   void initState() {
@@ -63,12 +65,14 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   void dispose() {
+    _searchRequestId++;
     _searchController.dispose();
     super.dispose();
   }
 
   Future<void> _performSearch(String query) async {
     if (query.trim().isEmpty) {
+      if (!mounted) return;
       setState(() {
         _products = [];
         _error = null;
@@ -76,7 +80,10 @@ class _SearchScreenState extends State<SearchScreen> {
       return;
     }
 
+    final requestId = ++_searchRequestId;
+
     try {
+      if (!mounted) return;
       setState(() {
         _isLoading = true;
         _error = null;
@@ -87,12 +94,14 @@ class _SearchScreenState extends State<SearchScreen> {
         limit: 50,
       );
 
+      if (!mounted || requestId != _searchRequestId) return;
       setState(() {
         _products = products;
         _lastSearchQuery = query.trim();
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted || requestId != _searchRequestId) return;
       setState(() {
         _error = 'An error occurred during search. Please try again.';
         _isLoading = false;
@@ -107,7 +116,7 @@ class _SearchScreenState extends State<SearchScreen> {
         title: const Text('Search'),
         centerTitle: true,
         backgroundColor: _primaryColor,
-        foregroundColor: Colors.white,
+        foregroundColor: ColorUtils.foregroundOn(_primaryColor),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
@@ -291,7 +300,7 @@ class _SearchScreenState extends State<SearchScreen> {
               crossAxisCount: 2,
               mainAxisSpacing: 8.0,
               crossAxisSpacing: 8.0,
-              childAspectRatio: 0.75,
+              childAspectRatio: 0.68,
             ),
             itemCount: _products.length,
             itemBuilder: (context, index) {

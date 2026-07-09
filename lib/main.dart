@@ -23,8 +23,10 @@ import 'screens/password_reset_confirm_screen.dart';
 import 'screens/guest_order_lookup_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/contact_form_screen.dart';
+import 'screens/storefront_webview_screen.dart';
 import 'core/services/shopware_api.dart';
 import 'core/config/app_config.dart';
+import 'core/utils/color_utils.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -99,15 +101,7 @@ class BootstrapErrorApp extends StatelessWidget {
 class FlutterShopApp extends StatelessWidget {
   const FlutterShopApp({super.key});
 
-  Color _hexToColor(String hex) {
-    try {
-      hex = hex.replaceAll('#', '');
-      if (hex.length == 6) hex = 'FF$hex';
-      return Color(int.parse(hex, radix: 16));
-    } catch (e) {
-      return Colors.blue;
-    }
-  }
+  Color _hexToColor(String hex) => ColorUtils.hexToColor(hex);
 
   @override
   Widget build(BuildContext context) {
@@ -197,14 +191,20 @@ final _router = GoRouter(
       path: '/category/:categoryId',
       builder: (context, state) {
         final categoryId = state.pathParameters['categoryId']!;
-        return CategoryScreen(categoryId: categoryId);
+        return CategoryScreen(
+          key: ValueKey(categoryId),
+          categoryId: categoryId,
+        );
       },
     ),
     GoRoute(
       path: '/product/:productId',
       builder: (context, state) {
         final productId = state.pathParameters['productId']!;
-        return ProductDetailScreen(productId: productId);
+        return ProductDetailScreen(
+          key: ValueKey(productId),
+          productId: productId,
+        );
       },
     ),
     GoRoute(
@@ -248,6 +248,21 @@ final _router = GoRouter(
     GoRoute(
       path: '/checkout',
       builder: (context, state) => const CheckoutScreen(),
+    ),
+    GoRoute(
+      path: '/storefront',
+      builder: (context, state) {
+        final url = state.uri.queryParameters['url'];
+        if (url == null || url.isEmpty) {
+          return const Scaffold(
+            body: Center(child: Text('URL is required')),
+          );
+        }
+        return StorefrontWebViewScreen(
+          url: url,
+          title: state.uri.queryParameters['title'] ?? 'Shop',
+        );
+      },
     ),
     GoRoute(
       path: '/orders',

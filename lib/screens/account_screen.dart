@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import '../core/utils/color_utils.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
 
 import '../core/storage.dart';
 import '../data/repositories/auth_repository.dart';
 import '../core/config/app_config.dart';
+import '../core/utils/storefront_url.dart';
+import '../core/utils/storefront_navigation.dart';
 import '../core/services/shopware_api.dart';
 
 class AccountScreen extends StatefulWidget {
@@ -71,12 +73,14 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Future<void> _load() async {
+    if (!mounted) return;
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
       final token = await TokenStorage.instance.loadContextToken();
+      if (!mounted) return;
       if (token == null || token.isEmpty) {
         setState(() {
           _profile = null;
@@ -84,15 +88,16 @@ class _AccountScreenState extends State<AccountScreen> {
       } else {
         try {
           final me = await AuthRepository().me();
+          if (!mounted) return;
           setState(() {
             _profile = me;
           });
         } on DioException catch (e) {
-          // 403 or 401 means not logged in
+          if (!mounted) return;
           if (e.response?.statusCode == 403 || e.response?.statusCode == 401) {
             setState(() {
               _profile = null;
-              _error = null; // Don't show error, just show login screen
+              _error = null;
             });
           } else {
             setState(() {
@@ -100,21 +105,25 @@ class _AccountScreenState extends State<AccountScreen> {
             });
           }
         } catch (e) {
+          if (!mounted) return;
           setState(() {
             _profile = null;
-            _error = null; // Don't show error for other exceptions
+            _error = null;
           });
         }
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
-        _error = null; // Don't show error, just show login screen
+        _error = null;
         _profile = null;
       });
     } finally {
-      setState(() {
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -129,7 +138,7 @@ class _AccountScreenState extends State<AccountScreen> {
         title: const Text('My Account'),
         centerTitle: true,
         backgroundColor: _primaryColor,
-        foregroundColor: Colors.white,
+        foregroundColor: ColorUtils.foregroundOn(_primaryColor),
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
@@ -193,17 +202,12 @@ class _AccountScreenState extends State<AccountScreen> {
               OutlinedButton(
                 onPressed: _actionLoading
                     ? null
-                    : () async {
-                        // Open Shopware storefront profile update page in browser
-                        final baseUrl = AppConfig.baseUrl.endsWith('/')
-                            ? AppConfig.baseUrl
-                            : '${AppConfig.baseUrl}/';
-                        final profileUrl = '${baseUrl}account/profile';
-                        final uri = Uri.parse(profileUrl);
-                        if (await canLaunchUrl(uri)) {
-                          await launchUrl(uri,
-                              mode: LaunchMode.externalApplication);
-                        }
+                    : () {
+                        StorefrontNavigation.open(
+                          context,
+                          StorefrontUrl.accountProfile(),
+                          title: 'Profile',
+                        );
                       },
                 child: const Text('Update Profile'),
               ),
@@ -217,18 +221,12 @@ class _AccountScreenState extends State<AccountScreen> {
               OutlinedButton(
                 onPressed: _actionLoading
                     ? null
-                    : () async {
-                        // Open Shopware storefront password reset page in browser
-                        final baseUrl = AppConfig.baseUrl.endsWith('/')
-                            ? AppConfig.baseUrl
-                            : '${AppConfig.baseUrl}/';
-                        final passwordChangeUrl =
-                            '${baseUrl}account/profile/password';
-                        final uri = Uri.parse(passwordChangeUrl);
-                        if (await canLaunchUrl(uri)) {
-                          await launchUrl(uri,
-                              mode: LaunchMode.externalApplication);
-                        }
+                    : () {
+                        StorefrontNavigation.open(
+                          context,
+                          StorefrontUrl.accountPassword(),
+                          title: 'Change Password',
+                        );
                       },
                 child: const Text('Change Password'),
               ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/utils/color_utils.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/services/shopware_api.dart';
@@ -153,7 +154,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: const Text('Language & Currency'),
         centerTitle: true,
         backgroundColor: _primaryColor,
-        foregroundColor: Colors.white,
+        foregroundColor: ColorUtils.foregroundOn(_primaryColor),
       ),
       body: _loading && _context == null
           ? const Center(child: CircularProgressIndicator())
@@ -226,7 +227,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onPressed: _loading ? null : _updateContext,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _primaryColor,
-                      foregroundColor: Colors.white,
+                      foregroundColor: ColorUtils.foregroundOn(_primaryColor),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                     child: _loading

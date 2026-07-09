@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import '../core/utils/color_utils.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../data/repositories/auth_repository.dart';
 import '../core/services/shopware_api.dart';
 import '../core/config/app_config.dart';
+import '../core/utils/storefront_url.dart';
+import '../core/utils/storefront_navigation.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -68,14 +70,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  String _storefrontBaseUrl() {
-    var base = AppConfig.baseUrl.trim();
-    if (base.endsWith('/store-api')) {
-      base = base.substring(0, base.length - '/store-api'.length);
-    }
-    base = base.replaceAll(RegExp(r'/+$'), '');
-    return '$base/';
-  }
 
   @override
   void dispose() {
@@ -127,7 +121,7 @@ class _LoginScreenState extends State<LoginScreen> {
         title: const Text('Customer Login'),
         centerTitle: true,
         backgroundColor: _primaryColor,
-        foregroundColor: Colors.white,
+        foregroundColor: ColorUtils.foregroundOn(_primaryColor),
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
@@ -165,23 +159,12 @@ class _LoginScreenState extends State<LoginScreen> {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () async {
-                    // Shopware storefront password recovery sayfasını browser'da aç
-                    final baseUrl = _storefrontBaseUrl();
-                    final recoverUrl = '${baseUrl}account/recover';
-                    final uri = Uri.parse(recoverUrl);
-                    if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri,
-                          mode: LaunchMode.externalApplication);
-                    } else {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text(
-                                  'Could not open password recovery page')),
-                        );
-                      }
-                    }
+                  onPressed: () {
+                    StorefrontNavigation.open(
+                      context,
+                      StorefrontUrl.accountRecover(),
+                      title: 'Password Recovery',
+                    );
                   },
                   child: const Text('Forgot Password'),
                 ),

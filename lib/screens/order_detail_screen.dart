@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import '../core/utils/color_utils.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../data/repositories/orders_repository.dart';
 import '../core/config/app_config.dart';
+import '../core/utils/storefront_url.dart';
+import '../core/utils/storefront_navigation.dart';
 import '../core/services/shopware_api.dart';
 
 class OrderDetailScreen extends StatefulWidget {
@@ -202,37 +204,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     return null;
   }
 
-  String _storefrontBaseUrl() {
-    var base = AppConfig.baseUrl.trim();
-    if (base.endsWith('/store-api')) {
-      base = base.substring(0, base.length - '/store-api'.length);
-    }
-    base = base.replaceAll(RegExp(r'/+$'), '');
-    return '$base/';
-  }
-
   Future<void> _openOrderList() async {
-    try {
-      final baseUrl = _storefrontBaseUrl();
-      final orderListUrl = '${baseUrl}account/order';
-      final uri = Uri.parse(orderListUrl);
-
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Could not open order list')),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
-    }
+    await StorefrontNavigation.open(
+      context,
+      StorefrontUrl.accountOrders(),
+      title: 'Orders',
+    );
   }
 
   @override
@@ -246,7 +223,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         title: const Text('Order Details'),
         centerTitle: true,
         backgroundColor: _primaryColor,
-        foregroundColor: Colors.white,
+        foregroundColor: ColorUtils.foregroundOn(_primaryColor),
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
@@ -712,7 +689,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             label: const Text('View Order List'),
             style: ElevatedButton.styleFrom(
               backgroundColor: _primaryColor,
-              foregroundColor: Colors.white,
+              foregroundColor: ColorUtils.foregroundOn(_primaryColor),
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
           ),
@@ -744,27 +721,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Future<void> _downloadDocument(String documentId, String deepLinkCode) async {
-    try {
-      // Use Store API document download endpoint
-      final baseUrl = AppConfig.baseUrl;
-      final url =
-          '$baseUrl/store-api/document/download/$documentId/$deepLinkCode';
-
-      if (await canLaunchUrl(Uri.parse(url))) {
-        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Could not open document')),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
-    }
+    await StorefrontNavigation.open(
+      context,
+      StorefrontUrl.documentDownload(documentId, deepLinkCode),
+      title: 'Document',
+    );
   }
 }

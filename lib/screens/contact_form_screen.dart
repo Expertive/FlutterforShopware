@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/utils/color_utils.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/services/shopware_api.dart';
@@ -128,7 +129,7 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
         title: const Text('Contact'),
         centerTitle: true,
         backgroundColor: _primaryColor,
-        foregroundColor: Colors.white,
+        foregroundColor: ColorUtils.foregroundOn(_primaryColor),
       ),
       body: _success ? _buildSuccessView() : _buildFormView(),
     );
@@ -244,7 +245,7 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
               onPressed: _loading ? null : _submit,
               style: ElevatedButton.styleFrom(
                 backgroundColor: _primaryColor,
-                foregroundColor: Colors.white,
+                foregroundColor: ColorUtils.foregroundOn(_primaryColor),
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
               child: _loading
@@ -308,7 +309,7 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: _primaryColor,
-                foregroundColor: Colors.white,
+                foregroundColor: ColorUtils.foregroundOn(_primaryColor),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               ),

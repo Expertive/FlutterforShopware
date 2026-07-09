@@ -1,13 +1,30 @@
 import 'package:dio/dio.dart';
 
 import '../../core/api_client.dart';
+import '../../core/storage.dart';
 
 class CartRepository {
   final Dio _dio = ApiClient.instance.dio;
 
+  Future<void> _saveContextTokenFromResponse(
+    Response<dynamic> response,
+  ) async {
+    await TokenStorage.instance.saveContextTokenFromResponse(response);
+  }
+
+  Future<void> _ensureContextToken() async {
+    final token = await TokenStorage.instance.loadContextToken();
+    if (token != null && token.isNotEmpty) return;
+
+    final resp = await _dio.get('/store-api/context');
+    await _saveContextTokenFromResponse(resp);
+  }
+
   Future<Map<String, dynamic>> getCart() async {
+    await _ensureContextToken();
     try {
       final resp = await _dio.get('/store-api/checkout/cart');
+      await _saveContextTokenFromResponse(resp);
       return (resp.data as Map).cast<String, dynamic>();
     } catch (e) {
       // If cart not found, create it
@@ -20,13 +37,17 @@ class CartRepository {
   }
 
   Future<Map<String, dynamic>> createCart() async {
+    await _ensureContextToken();
     final resp = await _dio.post('/store-api/checkout/cart', data: {});
+    await _saveContextTokenFromResponse(resp);
     return (resp.data as Map).cast<String, dynamic>();
   }
 
   Future<void> _ensureCart() async {
+    await _ensureContextToken();
     try {
-      await _dio.get('/store-api/checkout/cart');
+      final resp = await _dio.get('/store-api/checkout/cart');
+      await _saveContextTokenFromResponse(resp);
     } catch (e) {
       if (e is DioException &&
           (e.response?.statusCode == 404 || e.response?.statusCode == 400)) {
@@ -48,12 +69,14 @@ class CartRepository {
         'items': [
           {
             'type': 'product',
+            'id': productId,
             'referencedId': productId,
             'quantity': quantity,
           }
         ]
       },
     );
+    await _saveContextTokenFromResponse(resp);
     return (resp.data as Map).cast<String, dynamic>();
   }
 
@@ -65,6 +88,7 @@ class CartRepository {
         'ids': [lineItemId],
       },
     );
+    await _saveContextTokenFromResponse(resp);
     return (resp.data as Map).cast<String, dynamic>();
   }
 
@@ -125,6 +149,7 @@ class CartRepository {
         ]
       },
     );
+    await _saveContextTokenFromResponse(resp);
     return (resp.data as Map).cast<String, dynamic>();
   }
 
@@ -141,6 +166,7 @@ class CartRepository {
         ]
       },
     );
+    await _saveContextTokenFromResponse(resp);
     return (resp.data as Map).cast<String, dynamic>();
   }
 }

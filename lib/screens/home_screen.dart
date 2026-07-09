@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
+import '../core/utils/color_utils.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/painting.dart' show imageCache;
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../core/services/dynamic_layout_service.dart';
 import '../core/services/shopware_api.dart';
 import '../core/config/app_config.dart';
+import '../core/utils/storefront_url.dart';
+import '../core/utils/storefront_navigation.dart';
 import '../core/storage.dart';
 import '../data/repositories/auth_repository.dart';
 import '../core/models/sales_channel_info.dart';
@@ -29,6 +29,12 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   String? _error;
   late Color _primaryColor;
+  Color get _onPrimaryColor => ColorUtils.foregroundOn(_primaryColor);
+
+  Color get _onPrimaryMuted => ColorUtils.foregroundOnMuted(_primaryColor);
+
+  Color get _onPrimaryDivider => ColorUtils.dividerOn(_primaryColor);
+
   SalesChannelInfo? _salesChannelInfo;
   String? _appLogoUrl; // Config'den gelen logo URL'i
   int _currentIndex = 0;
@@ -78,7 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(
               backgroundColor: _primaryColor,
-              foregroundColor: Colors.white,
+              foregroundColor: ColorUtils.foregroundOn(_primaryColor),
             ),
             child: const Text('Accept'),
           ),
@@ -231,7 +237,7 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: _buildAppBarTitle(),
         backgroundColor: _primaryColor,
-        foregroundColor: Colors.white,
+        foregroundColor: ColorUtils.foregroundOn(_primaryColor),
         actions: [
           IconButton(
               icon: const Icon(Icons.search),
@@ -473,18 +479,18 @@ class _HomeScreenState extends State<HomeScreen> {
                                       loadingBuilder:
                                           (context, child, loadingProgress) {
                                         if (loadingProgress == null) return child;
-                                        return const Center(
+                                        return Center(
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2,
-                                            color: Colors.white,
+                                            color: _onPrimaryColor,
                                           ),
                                         );
                                       },
                                       errorBuilder: (context, error, stackTrace) {
-                                        return const Icon(
+                                        return Icon(
                                           Icons.store,
                                           size: 40,
-                                          color: Colors.white,
+                                          color: _onPrimaryColor,
                                         );
                                       },
                                     ),
@@ -498,17 +504,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                       memCacheWidth: 200,
                                       fadeInDuration:
                                           const Duration(milliseconds: 200),
-                                      placeholder: (context, url) => const Center(
+                                      placeholder: (context, url) => Center(
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          color: Colors.white,
+                                          color: _onPrimaryColor,
                                         ),
                                       ),
                                       errorWidget: (context, url, error) {
-                                        return const Icon(
+                                        return Icon(
                                           Icons.store,
                                           size: 40,
-                                          color: Colors.white,
+                                          color: _onPrimaryColor,
                                         );
                                       },
                                       httpHeaders: const {
@@ -519,15 +525,15 @@ class _HomeScreenState extends State<HomeScreen> {
                           },
                         );
                       }
-                      return const Icon(
+                      return Icon(
                         Icons.store,
                         size: 40,
-                        color: Colors.white,
+                        color: _onPrimaryColor,
                       );
                     },
                   ),
-                  const Divider(
-                    color: Colors.white24,
+                  Divider(
+                    color: _onPrimaryDivider,
                     thickness: 1,
                     height: 20, // Ekstra dikey boşluk eklemeden ince çizgi
                   ),
@@ -542,10 +548,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.language,
                                 size: 14,
-                                color: Colors.white70,
+                                color: _onPrimaryMuted,
                               ),
                               const SizedBox(width: 1),
                               Expanded(
@@ -556,13 +562,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                   isDense: true, // Yüksekliği azalt
                                   underline: const SizedBox(),
                                   dropdownColor: _primaryColor,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 11,
-                                    color: Colors.white,
+                                    color: _onPrimaryColor,
                                   ),
-                                  icon: const Icon(
+                                  icon: Icon(
                                     Icons.arrow_drop_down,
-                                    color: Colors.white70,
+                                    color: _onPrimaryMuted,
                                     size: 16,
                                   ),
                                   items: _availableLanguages.isEmpty
@@ -578,8 +584,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                             value: id,
                                             child: Text(
                                               name,
-                                              style: const TextStyle(
-                                                  color: Colors.white,
+                                              style: TextStyle(
+                                                  color: _onPrimaryColor,
                                                   fontSize: 14),
                                               overflow: TextOverflow.ellipsis,
                                             ),
@@ -594,19 +600,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                     }
                                   },
                                   hint: _loadingLanguagesCurrencies
-                                      ? const SizedBox(
+                                      ? SizedBox(
                                           width: 10,
                                           height: 10,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 1.5,
-                                            color: Colors.white70,
+                                            color: _onPrimaryMuted,
                                           ),
                                         )
                                       : Text(
                                           _salesChannelInfo?.languageName ??
                                               'Language',
-                                          style: const TextStyle(
-                                            color: Colors.white70,
+                                          style: TextStyle(
+                                            color: _onPrimaryMuted,
                                             fontSize: 11,
                                           ),
                                           overflow: TextOverflow.ellipsis,
@@ -641,7 +647,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   currencyIcon = Icons.attach_money;
                                 }
                                 return Icon(currencyIcon,
-                                    size: 14, color: Colors.white70);
+                                    size: 14, color: _onPrimaryMuted);
                               },
                             ),
                             const SizedBox(width: 4),
@@ -674,8 +680,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                             value: id,
                                             child: Text(
                                               '$isoCode - $name',
-                                              style: const TextStyle(
-                                                  color: Colors.white,
+                                              style: TextStyle(
+                                                  color: _onPrimaryColor,
                                                   fontSize: 14),
                                               overflow: TextOverflow.ellipsis,
                                             ),
@@ -694,12 +700,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                     isExpanded: true,
                                     underline: const SizedBox(),
                                     dropdownColor: _primaryColor,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 11,
-                                      color: Colors.white,
+                                      color: _onPrimaryColor,
                                     ),
-                                    icon: const Icon(Icons.arrow_drop_down,
-                                        color: Colors.white70, size: 18),
+                                    icon: Icon(Icons.arrow_drop_down,
+                                        color: _onPrimaryMuted, size: 18),
                                     items: currencyItems,
                                     onChanged: (String? newCurrencyId) {
                                       if (newCurrencyId != null &&
@@ -715,20 +721,20 @@ class _HomeScreenState extends State<HomeScreen> {
                                       }
                                     },
                                     hint: _loadingLanguagesCurrencies
-                                        ? const SizedBox(
+                                        ? SizedBox(
                                             width: 10,
                                             height: 10,
                                             child: CircularProgressIndicator(
                                               strokeWidth: 1.5,
-                                              color: Colors.white70,
+                                              color: _onPrimaryMuted,
                                             ),
                                           )
                                         : Text(
                                             _salesChannelInfo
                                                     ?.currencyIsoCode ??
                                                 'Currency',
-                                            style: const TextStyle(
-                                                color: Colors.white70,
+                                            style: TextStyle(
+                                                color: _onPrimaryMuted,
                                                 fontSize: 11),
                                             overflow: TextOverflow.ellipsis,
                                           ),
@@ -746,7 +752,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             // Header altındaki Home ve Categories satırlarını beyaz zemin üzerinde göster
-            Container(
+            Material(
               color: Colors.white,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -774,17 +780,18 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             if (hasCurrent) ...[
-              ListTile(
-                tileColor: Colors.white,
-                leading: const Icon(Icons.shopping_bag_outlined),
-                // Use category name if known, otherwise fallback text
-                title: Text(_drawerCurrentCategoryName ??
-                    'Show products of this category'),
-                onTap: () {
-                  final id = _drawerParentCategoryId!;
-                  Navigator.of(context).pop();
-                  context.go('/category/$id');
-                },
+              Material(
+                color: Colors.white,
+                child: ListTile(
+                  leading: const Icon(Icons.shopping_bag_outlined),
+                  title: Text(_drawerCurrentCategoryName ??
+                      'Show products of this category'),
+                  onTap: () {
+                    final id = _drawerParentCategoryId!;
+                    Navigator.of(context).pop();
+                    context.go('/category/$id');
+                  },
+                ),
               ),
             ],
             Expanded(
@@ -822,8 +829,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     );
                   }
-                  return Container(
-                    color: Colors.white, // Kategoriler listesi arka planı beyaz
+                  return Material(
+                    color: Colors.white,
                     child: ListView.builder(
                       itemCount: elements.length,
                       itemBuilder: (context, index) {
@@ -922,18 +929,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     ListTile(
                       leading: const Icon(Icons.person_add),
                       title: const Text('Register'),
-                      onTap: () async {
+                      onTap: () {
                         Navigator.of(context).pop();
-                        // Open Shopware storefront register page in browser
-                        final baseUrl = AppConfig.baseUrl.endsWith('/')
-                            ? AppConfig.baseUrl
-                            : '${AppConfig.baseUrl}/';
-                        final registerUrl = '${baseUrl}account/register';
-                        final uri = Uri.parse(registerUrl);
-                        if (await canLaunchUrl(uri)) {
-                          await launchUrl(uri,
-                              mode: LaunchMode.externalApplication);
-                        }
+                        StorefrontNavigation.open(
+                          context,
+                          StorefrontUrl.accountRegister(),
+                          title: 'Register',
+                        );
                       },
                     ),
                   ],
@@ -956,14 +958,14 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: (index) {
         setState(() => _currentIndex = index);
         if (index == 1) {
-          context.go('/search');
+          context.go('/cart');
         } else if (index == 2) {
           context.go('/account');
         }
       },
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
+        BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'Cart'),
         BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Account'),
       ],
     );

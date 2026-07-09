@@ -2,15 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 // WebView import - only for mobile platforms
-// On web, we use url_launcher instead
 import 'package:webview_flutter/webview_flutter.dart';
 
 import 'shopware_api.dart';
 import '../../widgets/product_slider.dart';
 import '../../widgets/product_card.dart';
 import '../models/product.dart';
+import '../utils/storefront_navigation.dart';
 
 class DynamicLayoutService {
   static final DynamicLayoutService _instance =
@@ -26,18 +25,18 @@ class DynamicLayoutService {
       final cmsData = await _api.getLayout(pageId);
 
       // If data is empty or null, return null (fallback layout will be used)
-      if (cmsData is Map && cmsData.isEmpty) {
+      if (cmsData.isEmpty) {
         return null;
       }
 
       // If sections exist (direct Shopware CMS page structure), convert to Flutter format
-      if (cmsData is Map && cmsData.containsKey('sections')) {
+      if (cmsData.containsKey('sections')) {
         return _buildWidgetFromCms(cmsData, context);
       }
 
       // If type and child exist (flutter/layout endpoint), use directly
       // Backend sometimes returns JSON with type/child even in error cases
-      if (cmsData is Map && (cmsData.containsKey('child') || cmsData.containsKey('type'))) {
+      if (cmsData.containsKey('child') || cmsData.containsKey('type')) {
         return _buildWidget(cmsData, context);
       }
 
@@ -147,9 +146,11 @@ class DynamicLayoutService {
       case 'PageView':
         return _buildPageView(childMap, context);
       case 'YouTubeVideo':
-        return _buildYouTubeVideo(childMap);
+        if (context == null) return const SizedBox.shrink();
+        return _buildYouTubeVideo(childMap, context);
       case 'WebView':
-        return _buildWebView(childMap);
+        if (context == null) return const SizedBox.shrink();
+        return _buildWebView(childMap, context);
       case 'ProductSlider':
         return _buildFlutterProductSlider(childMap);
       case 'ProductCard':
@@ -609,7 +610,10 @@ class DynamicLayoutService {
     );
   }
 
-  Widget _buildYouTubeVideo(Map<String, dynamic> videoData) {
+  Widget _buildYouTubeVideo(
+    Map<String, dynamic> videoData,
+    BuildContext context,
+  ) {
     final videoId = videoData['videoId']?.toString() ?? '';
     if (videoId.isEmpty) {
       return const SizedBox.shrink();
@@ -649,12 +653,11 @@ class DynamicLayoutService {
         padding: const EdgeInsets.all(8.0),
         child: Card(
           child: InkWell(
-            onTap: () async {
-              final uri = Uri.parse('https://www.youtube.com/watch?v=$videoId');
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              }
-            },
+            onTap: () => StorefrontNavigation.open(
+              context,
+              'https://www.youtube.com/watch?v=$videoId',
+              title: 'YouTube',
+            ),
             child: Container(
               width: double.infinity,
               height: double.infinity,
@@ -716,7 +719,7 @@ class DynamicLayoutService {
     }
   }
 
-  Widget _buildWebView(Map<String, dynamic> webViewData) {
+  Widget _buildWebView(Map<String, dynamic> webViewData, BuildContext context) {
     final url = webViewData['url']?.toString() ?? '';
     if (url.isEmpty) {
       return const SizedBox.shrink();
@@ -736,12 +739,7 @@ class DynamicLayoutService {
         padding: const EdgeInsets.all(8.0),
         child: Card(
           child: InkWell(
-            onTap: () async {
-              final uri = Uri.parse(url);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              }
-            },
+            onTap: () => StorefrontNavigation.open(context, url),
             child: Container(
               width: double.infinity,
               height: double.infinity,
@@ -752,7 +750,7 @@ class DynamicLayoutService {
                   const Icon(Icons.open_in_browser, size: 48, color: Colors.blue),
                   const SizedBox(height: 8),
                   Text(
-                    'Open in Browser',
+                    'Open Link',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/utils/color_utils.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
@@ -121,7 +122,7 @@ class _GuestOrderLookupScreenState extends State<GuestOrderLookupScreen> {
         title: const Text('Guest Order Lookup'),
         centerTitle: true,
         backgroundColor: _primaryColor,
-        foregroundColor: Colors.white,
+        foregroundColor: ColorUtils.foregroundOn(_primaryColor),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
@@ -198,7 +199,7 @@ class _GuestOrderLookupScreenState extends State<GuestOrderLookupScreen> {
                 onPressed: _loading ? null : _lookupOrders,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _primaryColor,
-                  foregroundColor: Colors.white,
+                  foregroundColor: ColorUtils.foregroundOn(_primaryColor),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 child: _loading

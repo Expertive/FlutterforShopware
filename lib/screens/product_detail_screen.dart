@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/utils/color_utils.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
@@ -6,7 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../core/models/product.dart';
 import '../core/services/shopware_api.dart';
 import '../data/repositories/cart_repository.dart';
-import '../core/storage.dart';
+import '../data/repositories/auth_repository.dart';
 import '../core/config/app_config.dart';
 import '../core/api_client.dart';
 
@@ -25,6 +26,7 @@ class ProductDetailScreen extends StatefulWidget {
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   final ShopwareApi _api = ShopwareApi();
   final CartRepository _cartRepo = CartRepository();
+  final AuthRepository _authRepo = AuthRepository();
 
   Product? _product;
   List<Map<String, dynamic>> _configurator = [];
@@ -81,8 +83,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
   }
 
+  @override
+  void didUpdateWidget(covariant ProductDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.productId != widget.productId) {
+      _selectedVariantId = null;
+      _selectedOptions.clear();
+      _loadProduct();
+    }
+  }
+
   Future<void> _loadProduct() async {
     try {
+      if (!mounted) return;
       setState(() {
         _isLoading = true;
         _error = null;
@@ -129,6 +142,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       final product = Product.fromJson(productJson);
       final configurator = productData['configurator'] as List? ?? [];
 
+      if (!mounted) return;
       setState(() {
         _product = product;
         _configurator = List<Map<String, dynamic>>.from(
@@ -137,6 +151,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _isLoading = false;
@@ -190,7 +205,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ),
         centerTitle: true,
         backgroundColor: _primaryColor,
-        foregroundColor: Colors.white,
+        foregroundColor: ColorUtils.foregroundOn(_primaryColor),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => _handleBack(context),
@@ -816,34 +831,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () async {
-                    // Login check
-                    final token =
-                        await TokenStorage.instance.loadContextToken();
-                    if (token == null || token.isEmpty) {
+                    final isLoggedIn = await _authRepo.isLoggedIn();
+                    if (!isLoggedIn) {
                       if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text('Please log in'),
-                            backgroundColor: Colors.orange,
-                            duration: const Duration(seconds: 3),
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            action: SnackBarAction(
-                              label: 'Log In',
-                              textColor: Colors.white,
-                              onPressed: () {
-                                context.go('/login');
-                              },
-                            ),
-                          ),
-                        );
+                        context.go('/login');
                       }
                       return;
                     }
 
-                    // If logged in, add to cart
                     try {
                       final productIdToAdd =
                           _selectedVariantId ?? widget.productId;
@@ -879,7 +874,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   label: const Text('Add to Cart'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: theme.colorScheme.primary,
-                    foregroundColor: Colors.white,
+                    foregroundColor: ColorUtils.foregroundOn(_primaryColor),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),

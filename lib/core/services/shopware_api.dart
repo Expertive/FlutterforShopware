@@ -818,11 +818,7 @@ class ShopwareApi {
     try {
       final response = await _dio.get('/store-api/context');
 
-      // Get context token from response header and save it
-      final tokenFromHeader = response.headers.value('sw-context-token');
-      if (tokenFromHeader != null && tokenFromHeader.isNotEmpty) {
-        await TokenStorage.instance.saveContextToken(tokenFromHeader);
-      }
+      await TokenStorage.instance.saveContextTokenFromResponse(response);
 
       final contextData = Map<String, dynamic>.from(response.data ?? {});
 

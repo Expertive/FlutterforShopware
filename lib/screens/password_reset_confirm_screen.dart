@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/utils/color_utils.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/repositories/auth_repository.dart';
@@ -122,7 +123,7 @@ class _PasswordResetConfirmScreenState
         title: const Text('Set New Password'),
         centerTitle: true,
         backgroundColor: _primaryColor,
-        foregroundColor: Colors.white,
+        foregroundColor: ColorUtils.foregroundOn(_primaryColor),
       ),
       body: _success ? _buildSuccessView() : _buildFormView(),
     );
@@ -223,7 +224,7 @@ class _PasswordResetConfirmScreenState
               onPressed: _loading ? null : _confirmReset,
               style: ElevatedButton.styleFrom(
                 backgroundColor: _primaryColor,
-                foregroundColor: Colors.white,
+                foregroundColor: ColorUtils.foregroundOn(_primaryColor),
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
               child: _loading
@@ -277,7 +278,7 @@ class _PasswordResetConfirmScreenState
               onPressed: () => context.go('/login'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _primaryColor,
-                foregroundColor: Colors.white,
+                foregroundColor: ColorUtils.foregroundOn(_primaryColor),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               ),

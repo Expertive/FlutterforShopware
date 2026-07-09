@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import '../core/utils/color_utils.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/repositories/cart_repository.dart';
+import '../data/repositories/auth_repository.dart';
 import '../core/services/shopware_api.dart';
 import '../core/config/app_config.dart';
+import '../core/models/sales_channel_info.dart';
+import '../core/utils/currency_formatter.dart';
+import '../core/utils/storefront_url.dart';
+import '../core/utils/storefront_navigation.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -14,11 +20,13 @@ class CartScreen extends StatefulWidget {
 
 class _CartScreenState extends State<CartScreen> {
   final CartRepository _repo = CartRepository();
+  final AuthRepository _authRepo = AuthRepository();
   final ShopwareApi _api = ShopwareApi();
   Map<String, dynamic>? _cart;
   bool _loading = true;
   String? _error;
   late Color _primaryColor;
+  String _currencyIsoCode = 'EUR';
 
   void _handleBack(BuildContext context) {
     if (context.canPop()) {
@@ -68,25 +76,40 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Future<void> _load() async {
+    if (!mounted) return;
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      final data = await _repo.getCart();
+      final results = await Future.wait([
+        _repo.getCart(),
+        _api.getSalesChannelContext(),
+      ]);
+      if (!mounted) return;
+      final data = results[0];
+      final contextData = results[1];
+      final salesChannelInfo = SalesChannelInfo.fromContext(contextData);
       setState(() {
         _cart = data;
+        _currencyIsoCode = salesChannelInfo.currencyIsoCode ?? 'EUR';
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
       });
     } finally {
-      setState(() {
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
     }
   }
+
+  String _formatPrice(dynamic amount) =>
+      CurrencyFormatter.format(amount, _currencyIsoCode);
 
   @override
   Widget build(BuildContext context) {
@@ -99,7 +122,7 @@ class _CartScreenState extends State<CartScreen> {
         title: const Text('Cart'),
         centerTitle: true,
         backgroundColor: _primaryColor,
-        foregroundColor: Colors.white,
+        foregroundColor: ColorUtils.foregroundOn(_primaryColor),
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
@@ -143,8 +166,8 @@ class _CartScreenState extends State<CartScreen> {
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (unitPrice != null) Text('Unit: $unitPrice'),
-                    if (totalPrice != null) Text('Total: $totalPrice'),
+                    if (unitPrice != null) Text('Unit: ${_formatPrice(unitPrice)}'),
+                    if (totalPrice != null) Text('Total: ${_formatPrice(totalPrice)}'),
                   ],
                 ),
                 trailing: SizedBox(
@@ -227,15 +250,15 @@ class _CartScreenState extends State<CartScreen> {
   Widget _buildTotals() {
     final price = _cart?['price'] as Map<String, dynamic>?;
     if (price == null) return const SizedBox.shrink();
-    final positionPrice = price['positionPrice']?.toString();
-    final totalPrice = price['totalPrice']?.toString();
-    final netPrice = price['netPrice']?.toString();
+    final positionPrice = price['positionPrice'];
+    final totalPrice = price['totalPrice'];
+    final netPrice = price['netPrice'];
     final calculatedTaxes = price['calculatedTaxes'] as List?;
     final deliveries = _cart?['deliveries'] as List?;
-    String? shippingCost;
+    dynamic shippingCost;
     if (deliveries != null && deliveries.isNotEmpty) {
       final delivery = deliveries[0] as Map<String, dynamic>?;
-      shippingCost = delivery?['shippingCosts']?['totalPrice']?.toString();
+      shippingCost = delivery?['shippingCosts']?['totalPrice'];
     }
     final lineItems = _cart?['lineItems'] as List?;
     final promotions = lineItems?.where((item) {
@@ -258,14 +281,17 @@ class _CartScreenState extends State<CartScreen> {
             const SizedBox(height: 8),
             ...promotions.map((p) {
               final label = p['label']?.toString() ?? 'Discount';
-              final discount = p['price']?['totalPrice']?.toString() ?? '';
+              final discount = p['price']?['totalPrice'];
               return Padding(
                 padding: const EdgeInsets.only(bottom: 4.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(label, style: const TextStyle(color: Colors.green)),
-                    Text(discount, style: const TextStyle(color: Colors.green)),
+                    Text(
+                      _formatPrice(discount),
+                      style: const TextStyle(color: Colors.green),
+                    ),
                   ],
                 ),
               );
@@ -277,16 +303,16 @@ class _CartScreenState extends State<CartScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('Subtotal'),
-                Text(positionPrice),
+                Text(_formatPrice(positionPrice)),
               ],
             ),
-          if (shippingCost != null && shippingCost != '0') ...[
+          if (shippingCost != null && shippingCost != 0) ...[
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('Shipping'),
-                Text(shippingCost),
+                Text(_formatPrice(shippingCost)),
               ],
             ),
           ],
@@ -294,14 +320,14 @@ class _CartScreenState extends State<CartScreen> {
             const SizedBox(height: 8),
             ...calculatedTaxes.map((tax) {
               final rate = tax['taxRate']?.toString() ?? '';
-              final amount = tax['tax']?.toString() ?? '';
+              final amount = tax['tax'];
               return Padding(
                 padding: const EdgeInsets.only(bottom: 4.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('VAT (%$rate)'),
-                    Text(amount),
+                    Text(_formatPrice(amount)),
                   ],
                 ),
               );
@@ -313,7 +339,7 @@ class _CartScreenState extends State<CartScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('Excluding VAT'),
-                Text(netPrice),
+                Text(_formatPrice(netPrice)),
               ],
             ),
           ],
@@ -323,9 +349,13 @@ class _CartScreenState extends State<CartScreen> {
             children: [
               const Text('Total',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              Text(totalPrice ?? '-',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 16)),
+              Text(
+                _formatPrice(totalPrice),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
             ],
           ),
         ],
@@ -342,7 +372,19 @@ class _CartScreenState extends State<CartScreen> {
         child: SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: () => context.go('/checkout'),
+            onPressed: () async {
+              final isLoggedIn = await _authRepo.isLoggedIn();
+              if (!isLoggedIn) {
+                if (mounted) context.go('/login');
+                return;
+              }
+              if (!mounted) return;
+              await StorefrontNavigation.open(
+                context,
+                StorefrontUrl.checkoutConfirm(),
+                title: 'Checkout',
+              );
+            },
             child: const Text('Complete Order'),
           ),
         ),

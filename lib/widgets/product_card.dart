@@ -43,28 +43,43 @@ class ProductCard extends StatelessWidget {
               width: 1,
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: height != null ? MainAxisSize.max : MainAxisSize.min,
-            children: [
-              // Product Image with modern styling
-              height != null
-                  ? Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final hasBoundedHeight = height != null ||
+                  constraints.maxHeight.isFinite;
+
+              if (hasBoundedHeight) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
                       flex: 3,
                       child: _buildImageContainer(),
-                    )
-                  : AspectRatio(
-                      aspectRatio: 1.0,
-                      child: _buildImageContainer(),
                     ),
-              // Product Info with modern styling
-              height != null
-                  ? Expanded(
+                    Expanded(
                       flex: 2,
-                      child: _buildProductInfo(context, theme, currencyFormat),
-                    )
-                  : _buildProductInfo(context, theme, currencyFormat),
-            ],
+                      child: _buildProductInfo(
+                        context,
+                        theme,
+                        currencyFormat,
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AspectRatio(
+                    aspectRatio: 1.0,
+                    child: _buildImageContainer(),
+                  ),
+                  _buildProductInfo(context, theme, currencyFormat),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -186,13 +201,12 @@ class ProductCard extends StatelessWidget {
   Widget _buildProductInfo(
       BuildContext context, ThemeData theme, NumberFormat currencyFormat) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 6.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Product Name
           Text(
             product.name,
             style: TextStyle(
@@ -205,7 +219,7 @@ class ProductCard extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           // Price and Availability
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
