@@ -71,7 +71,7 @@ flutter build ios --release \
   --dart-define=MOBILE_APP_SECRET=your-secret
 ```
 
-> **Note:** `SHOPWARE_ACCESS_KEY` is no longer required. The access key is fetched automatically at startup via `/flutter/bootstrap`.
+> **Note:** `SHOPWARE_ACCESS_KEY` is no longer required. The access key is fetched automatically at startup via `/store-api/flutter/bootstrap`.
 
 ## Project structure
 

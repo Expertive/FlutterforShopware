@@ -585,7 +585,7 @@ class ShopwareApi {
       ));
 
       final response = await bootstrapDio.get(
-        '/flutter/bootstrap',
+        '/store-api/flutter/bootstrap',
         queryParameters: {
           'salesChannelId': salesChannelId,
           'appSecret': AppConfig.mobileAppSecret,

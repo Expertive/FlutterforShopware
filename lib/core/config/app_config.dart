@@ -13,7 +13,7 @@ class AppConfig {
 
   // Mobile Sales Channel ID - hardcoded, identifies which sales channel this app uses.
   // Get this from Shopware Admin → Sales Channels → (your mobile channel) → ID field.
-  // Flutter uses this ID to bootstrap the access key on startup via /flutter/bootstrap.
+  // Flutter uses this ID to bootstrap the access key on startup via /store-api/flutter/bootstrap.
   static const String mobileSalesChannelId = const String.fromEnvironment(
     'SHOPWARE_SALES_CHANNEL_ID',
     defaultValue: '', // Mobilx sales channel ID

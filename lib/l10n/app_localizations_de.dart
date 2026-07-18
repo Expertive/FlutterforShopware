@@ -92,8 +92,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get cookieTitle => 'Cookie-Nutzung';
 
   @override
-  String get cookieMessage =>
-      'Diese Website verwendet Cookies, um Ihre Erfahrung zu verbessern. Durch die weitere Nutzung unserer Website stimmen Sie unserer Cookie-Richtlinie zu.';
+  String get cookieMessage => 'Diese Website verwendet Cookies, um Ihre Erfahrung zu verbessern. Durch die weitere Nutzung unserer Website stimmen Sie unserer Cookie-Richtlinie zu.';
 
   @override
   String get cookieDecline => 'Ablehnen';
@@ -230,20 +229,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checkoutFillAllFields => 'Bitte füllen Sie alle Felder aus';
 
   @override
-  String get checkoutLoginRequired =>
-      'Bitte melden Sie sich an, um eine Bestellung aufzugeben.';
+  String get checkoutLoginRequired => 'Bitte melden Sie sich an, um eine Bestellung aufzugeben.';
 
   @override
-  String get checkoutShippingBlocked =>
-      'Diese Versandart kann für die ausgewählte Lieferadresse nicht verwendet werden. Bitte wählen Sie eine andere Adresse oder Versandart.';
+  String get checkoutShippingBlocked => 'Diese Versandart kann für die ausgewählte Lieferadresse nicht verwendet werden. Bitte wählen Sie eine andere Adresse oder Versandart.';
 
   @override
-  String get checkoutOrderCreatedMissingPayment =>
-      'Bestellung erstellt. Erforderliche Zahlungsinformationen konnten nicht abgerufen werden.';
+  String get checkoutOrderCreatedMissingPayment => 'Bestellung erstellt. Erforderliche Zahlungsinformationen konnten nicht abgerufen werden.';
 
   @override
-  String get checkoutOrderCreatedPaymentRetry =>
-      'Ihre Bestellung wurde erfolgreich erstellt. Bitte versuchen Sie die Zahlung später erneut oder kontaktieren Sie den Kundenservice.';
+  String get checkoutOrderCreatedPaymentRetry => 'Ihre Bestellung wurde erfolgreich erstellt. Bitte versuchen Sie die Zahlung später erneut oder kontaktieren Sie den Kundenservice.';
 
   @override
   String checkoutPaymentError(String message) {
@@ -287,8 +282,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get checkoutOrderCreatedSuccess =>
-      'Ihre Bestellung wurde erfolgreich erstellt.';
+  String get checkoutOrderCreatedSuccess => 'Ihre Bestellung wurde erfolgreich erstellt.';
 
   @override
   String get checkoutOrderIdNotFound => 'Bestellnummer nicht gefunden';
@@ -300,8 +294,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checkoutCompleteOrder => 'Bestellung abschließen';
 
   @override
-  String get checkoutRedirectingPayment =>
-      'Weiterleitung zum Zahlungsanbieter...';
+  String get checkoutRedirectingPayment => 'Weiterleitung zum Zahlungsanbieter...';
 
   @override
   String checkoutInvalidRedirectUrl(String url) {
@@ -361,8 +354,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get categoryProducts => 'Produkte';
 
   @override
-  String get categoryEmpty =>
-      'In dieser Kategorie wurden noch keine Produkte oder Unterkategorien gefunden.';
+  String get categoryEmpty => 'In dieser Kategorie wurden noch keine Produkte oder Unterkategorien gefunden.';
 
   @override
   String get categoryMenu => 'Menü';
@@ -380,8 +372,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get searchSearching => 'Suche läuft...';
 
   @override
-  String get searchError =>
-      'Bei der Suche ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.';
+  String get searchError => 'Bei der Suche ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.';
 
   @override
   String get searchNoResults => 'Keine Suchergebnisse gefunden';
@@ -390,8 +381,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get searchTryDifferent => 'Versuchen Sie andere Suchbegriffe';
 
   @override
-  String get searchPrompt =>
-      'Verwenden Sie das Suchfeld oben, um nach Produkten zu suchen';
+  String get searchPrompt => 'Verwenden Sie das Suchfeld oben, um nach Produkten zu suchen';
 
   @override
   String searchResultsCount(String query, int count) {
@@ -485,12 +475,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get addressEdit => 'Bearbeiten';
 
   @override
-  String get addressSetDefaultShipping =>
-      'Als Standard-Lieferadresse festlegen';
+  String get addressSetDefaultShipping => 'Als Standard-Lieferadresse festlegen';
 
   @override
-  String get addressSetDefaultBilling =>
-      'Als Standard-Rechnungsadresse festlegen';
+  String get addressSetDefaultBilling => 'Als Standard-Rechnungsadresse festlegen';
 
   @override
   String get addressDelete => 'Löschen';
@@ -654,8 +642,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get passwordResetHeading => 'Passwort vergessen?';
 
   @override
-  String get passwordResetInstructions =>
-      'Geben Sie Ihre E-Mail-Adresse ein, wir senden Ihnen einen Link zum Zurücksetzen des Passworts.';
+  String get passwordResetInstructions => 'Geben Sie Ihre E-Mail-Adresse ein, wir senden Ihnen einen Link zum Zurücksetzen des Passworts.';
 
   @override
   String get passwordResetSendLink => 'Link zum Zurücksetzen senden';
@@ -675,23 +662,19 @@ class AppLocalizationsDe extends AppLocalizations {
   String get passwordConfirmTitle => 'Neues Passwort festlegen';
 
   @override
-  String get passwordConfirmInstructions =>
-      'Wählen Sie ein sicheres Passwort. Es muss mindestens 8 Zeichen lang sein.';
+  String get passwordConfirmInstructions => 'Wählen Sie ein sicheres Passwort. Es muss mindestens 8 Zeichen lang sein.';
 
   @override
-  String get passwordConfirmNewPasswordConfirm =>
-      'Neues Passwort (Bestätigung)';
+  String get passwordConfirmNewPasswordConfirm => 'Neues Passwort (Bestätigung)';
 
   @override
   String get passwordConfirmRequired => 'Bitte geben Sie Ihr Passwort ein';
 
   @override
-  String get passwordConfirmMinLength =>
-      'Das Passwort muss mindestens 8 Zeichen lang sein';
+  String get passwordConfirmMinLength => 'Das Passwort muss mindestens 8 Zeichen lang sein';
 
   @override
-  String get passwordConfirmAgainRequired =>
-      'Bitte geben Sie Ihr Passwort erneut ein';
+  String get passwordConfirmAgainRequired => 'Bitte geben Sie Ihr Passwort erneut ein';
 
   @override
   String get passwordConfirmMismatch => 'Passwörter stimmen nicht überein';
@@ -703,8 +686,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get passwordConfirmSuccessTitle => 'Passwort erfolgreich aktualisiert';
 
   @override
-  String get passwordConfirmSuccessBody =>
-      'Sie können sich jetzt mit Ihrem neuen Passwort anmelden.';
+  String get passwordConfirmSuccessBody => 'Sie können sich jetzt mit Ihrem neuen Passwort anmelden.';
 
   @override
   String get guestOrderTitle => 'Gast-Bestellabfrage';
@@ -713,8 +695,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get guestOrderHeading => 'Bestellungen nachschlagen';
 
   @override
-  String get guestOrderSubtitle =>
-      'Mit Ihrer E-Mail-Adresse und Postleitzahl können Sie Ihre Bestellungen einsehen.';
+  String get guestOrderSubtitle => 'Mit Ihrer E-Mail-Adresse und Postleitzahl können Sie Ihre Bestellungen einsehen.';
 
   @override
   String get guestOrderPostalCode => 'Postleitzahl';
@@ -735,8 +716,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get contactHeading => 'Kontaktieren Sie uns';
 
   @override
-  String get contactSubtitle =>
-      'Kontaktieren Sie uns bei Fragen oder Anregungen.';
+  String get contactSubtitle => 'Kontaktieren Sie uns bei Fragen oder Anregungen.';
 
   @override
   String get contactSubject => 'Betreff *';
@@ -751,8 +731,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get contactEmailRequired => 'Bitte geben Sie Ihre E-Mail-Adresse ein';
 
   @override
-  String get contactEmailInvalid =>
-      'Bitte geben Sie eine gültige E-Mail-Adresse ein';
+  String get contactEmailInvalid => 'Bitte geben Sie eine gültige E-Mail-Adresse ein';
 
   @override
   String get contactSubjectRequired => 'Bitte geben Sie einen Betreff ein';
@@ -764,8 +743,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get contactSuccessTitle => 'Nachricht gesendet';
 
   @override
-  String get contactSuccessBody =>
-      'Wir haben Ihre Nachricht erhalten. Wir melden uns so schnell wie möglich bei Ihnen.';
+  String get contactSuccessBody => 'Wir haben Ihre Nachricht erhalten. Wir melden uns so schnell wie möglich bei Ihnen.';
 
   @override
   String get contactSendNew => 'Neue Nachricht senden';
@@ -774,8 +752,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get bootstrapErrorTitle => 'Verbindung nicht möglich';
 
   @override
-  String get bootstrapErrorBody =>
-      'Die App konnte sich nicht mit dem Shop authentifizieren. Bitte überprüfen Sie die Verkaufskanal-ID, das App-Geheimnis und ob die mobile App in der Shopware-Verwaltung aktiviert ist.';
+  String get bootstrapErrorBody => 'Die App konnte sich nicht mit dem Shop authentifizieren. Bitte überprüfen Sie die Verkaufskanal-ID, das App-Geheimnis und ob die mobile App in der Shopware-Verwaltung aktiviert ist.';
 
   @override
   String get urlRequired => 'URL ist erforderlich';
