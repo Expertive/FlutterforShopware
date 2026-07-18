@@ -584,22 +584,34 @@ class ShopwareApi {
         receiveTimeout: AppConfig.receiveTimeout,
       ));
 
-      final response = await bootstrapDio.get(
+      // Prefer store-api (native Shopware CORS). Fall back to legacy storefront path.
+      final paths = <String>[
         '/store-api/flutter/bootstrap',
-        queryParameters: {
-          'salesChannelId': salesChannelId,
-          'appSecret': AppConfig.mobileAppSecret,
-        },
-      );
+        '/flutter/bootstrap',
+      ];
 
-      if (response.statusCode == 200 &&
-          response.data is Map &&
-          response.data['success'] == true) {
-        final accessKey = response.data['accessKey'] as String? ?? '';
-        if (accessKey.isNotEmpty) {
-          AppConfig.salesChannelAccessKey = accessKey;
-          ApiClient.instance.dio.options.headers['sw-access-key'] = accessKey;
-          return true;
+      for (final path in paths) {
+        try {
+          final response = await bootstrapDio.get(
+            path,
+            queryParameters: {
+              'salesChannelId': salesChannelId,
+              'appSecret': AppConfig.mobileAppSecret,
+            },
+          );
+
+          if (response.statusCode == 200 &&
+              response.data is Map &&
+              response.data['success'] == true) {
+            final accessKey = response.data['accessKey'] as String? ?? '';
+            if (accessKey.isNotEmpty) {
+              AppConfig.salesChannelAccessKey = accessKey;
+              ApiClient.instance.dio.options.headers['sw-access-key'] = accessKey;
+              return true;
+            }
+          }
+        } catch (_) {
+          // Try next path (e.g. older plugin without store-api route)
         }
       }
       return false;
