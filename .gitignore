@@ -50,3 +50,10 @@ lib/core/config/app_config.dart
 lib/core/config.dart
 .vscode/launch.json
 my-store/*
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
