@@ -89,7 +89,7 @@ class _ProductSliderState extends State<ProductSlider> {
                 decoration: BoxDecoration(
                   color: _currentPage == index
                       ? Colors.blue
-                      : Colors.grey.withOpacity(0.4),
+                      : Colors.grey.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -134,33 +134,31 @@ class _ProductSliderCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.08),
+                color: Colors.black.withValues(alpha: 0.08),
                 spreadRadius: 0,
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),
             ],
           ),
-          child: SizedBox(
-            height: 250,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Product image
-                ClipRRect(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Product image — flexible so info area never overflows
+              Expanded(
+                flex: 5,
+                child: ClipRRect(
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(16),
                   ),
                   child: Stack(
+                    fit: StackFit.expand,
                     children: [
                       imageUrl != null
                           ? CachedNetworkImage(
                               imageUrl: imageUrl,
-                              height: 160,
-                              width: double.infinity,
                               fit: BoxFit.cover,
                               placeholder: (context, url) => Container(
-                                height: 160,
                                 color: Colors.grey[100],
                                 child: const Center(
                                   child: CircularProgressIndicator(
@@ -169,7 +167,6 @@ class _ProductSliderCard extends StatelessWidget {
                                 ),
                               ),
                               errorWidget: (context, url, error) => Container(
-                                height: 160,
                                 color: Colors.grey[100],
                                 child: const Icon(
                                   Icons.image,
@@ -179,7 +176,6 @@ class _ProductSliderCard extends StatelessWidget {
                               ),
                             )
                           : Container(
-                              height: 160,
                               color: Colors.grey[100],
                               child: const Icon(
                                 Icons.image,
@@ -187,20 +183,19 @@ class _ProductSliderCard extends StatelessWidget {
                                 color: Colors.grey,
                               ),
                             ),
-                      // Gradient overlay
                       Positioned(
                         bottom: 0,
                         left: 0,
                         right: 0,
                         child: Container(
-                          height: 60,
+                          height: 48,
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               colors: [
                                 Colors.transparent,
-                                Colors.black.withOpacity(0.3),
+                                Colors.black.withValues(alpha: 0.3),
                               ],
                             ),
                           ),
@@ -209,18 +204,16 @@ class _ProductSliderCard extends StatelessWidget {
                     ],
                   ),
                 ),
-
-                // Product information
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12.0, vertical: 8.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Product name
-                        Text(
+              ),
+              Expanded(
+                flex: 3,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Flexible(
+                        child: Text(
                           name,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -228,35 +221,20 @@ class _ProductSliderCard extends StatelessWidget {
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                             color: Colors.black87,
+                            height: 1.2,
                           ),
                         ),
-                        const SizedBox(height: 3),
-                        // Product description (if available)
-                        if (product['description'] != null &&
-                            (product['description'] as String).isNotEmpty) ...[
-                          Text(
-                            (product['description'] as String).length > 80
-                                ? '${(product['description'] as String).substring(0, 80)}...'
-                                : product['description'] as String,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey[600],
-                              height: 1.2,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                        ],
-                        const Spacer(),
-                        // Price and button
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
                               child: Text(
                                 '${gross.toStringAsFixed(2)} €',
+                                maxLines: 1,
                                 style: const TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold,
@@ -264,26 +242,27 @@ class _ProductSliderCard extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: Colors.blue.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: const Icon(
-                                Icons.shopping_cart,
-                                size: 16,
-                                color: Colors.blue,
-                              ),
+                          ),
+                          const SizedBox(width: 4),
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(20),
                             ),
-                          ],
-                        ),
-                      ],
-                    ),
+                            child: const Icon(
+                              Icons.shopping_cart,
+                              size: 16,
+                              color: Colors.blue,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
